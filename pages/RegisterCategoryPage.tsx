@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { ItemCategory } from '../types';
+import { ItemCategory, PagePermission } from '../types';
 import { supabase } from '../supabaseClient';
 
 interface RegisterCategoryPageProps {
@@ -9,9 +8,11 @@ interface RegisterCategoryPageProps {
     onSave: (category: ItemCategory) => void;
     onCancel: () => void;
     onEditCategory: (id: string) => void;
+    permission: PagePermission;
 }
 
-const RegisterCategoryPage: React.FC<RegisterCategoryPageProps> = ({ categories, editingCategory, onSave, onCancel, onEditCategory }) => {
+const RegisterCategoryPage: React.FC<RegisterCategoryPageProps> = ({ categories, editingCategory, onSave, onCancel, onEditCategory, permission }) => {
+
     const [name, setName] = useState(editingCategory?.name || '');
     const [description, setDescription] = useState(editingCategory?.description || '');
     const nameInputRef = useRef<HTMLInputElement>(null);
@@ -126,12 +127,14 @@ const RegisterCategoryPage: React.FC<RegisterCategoryPageProps> = ({ categories,
                 </div>
 
                 <div className="flex gap-3 pt-2">
-                    <button onClick={handleSave} className="flex-1 bg-primary hover:bg-primary-dark text-white py-3 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all">
-                        Salvar Categoria
-                    </button>
                     <button onClick={handleClear} className="flex-1 px-6 py-3 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                         Limpar Campos
                     </button>
+                    {permission.canWrite && (
+                        <button onClick={handleSave} className="flex-[2] bg-primary hover:bg-primary-dark text-white py-3 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all">
+                            Salvar Categoria
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -150,12 +153,16 @@ const RegisterCategoryPage: React.FC<RegisterCategoryPageProps> = ({ categories,
                                 </div>
                             </div>
                             <div className="mt-4 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => onEditCategory(cat.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-all">
-                                    <span className="material-icons-round text-sm">edit</span>
-                                </button>
-                                <button onClick={() => handleDelete(cat.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
-                                    <span className="material-icons-round text-sm">delete</span>
-                                </button>
+                                {permission.canWrite && (
+                                    <button onClick={() => onEditCategory(cat.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-all">
+                                        <span className="material-icons-round text-sm">edit</span>
+                                    </button>
+                                )}
+                                {permission.canDelete && (
+                                    <button onClick={() => handleDelete(cat.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
+                                        <span className="material-icons-round text-sm">delete</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}

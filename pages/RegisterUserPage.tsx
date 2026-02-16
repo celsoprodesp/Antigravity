@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Profile, User } from '../types';
+import { Profile, User, PagePermission } from '../types';
 import { supabase } from '../supabaseClient';
 
 interface RegisterUserPageProps {
@@ -7,9 +7,12 @@ interface RegisterUserPageProps {
     editingUser?: User;
     onSave: (user: User) => void;
     onCancel: () => void;
+    permission: PagePermission;
+    currentUser: User | null;
 }
 
-const RegisterUserPage: React.FC<RegisterUserPageProps> = ({ profiles, editingUser, onSave, onCancel }) => {
+const RegisterUserPage: React.FC<RegisterUserPageProps> = ({ profiles, editingUser, onSave, onCancel, permission, currentUser }) => {
+
     const [name, setName] = useState(editingUser?.name || '');
     const [email, setEmail] = useState(editingUser?.email || '');
     const [profileId, setProfileId] = useState(editingUser?.profileId || profiles[0]?.id || '');
@@ -26,7 +29,7 @@ const RegisterUserPage: React.FC<RegisterUserPageProps> = ({ profiles, editingUs
 
             setTimeout(() => {
                 if (nameInputRef.current) nameInputRef.current.focus();
-            }, 100);
+            }, 200);
         } else {
             setName('');
             setEmail('');
@@ -35,7 +38,7 @@ const RegisterUserPage: React.FC<RegisterUserPageProps> = ({ profiles, editingUs
 
             setTimeout(() => {
                 if (nameInputRef.current) nameInputRef.current.focus();
-            }, 100);
+            }, 200);
         }
     }, [editingUser, profiles]);
 
@@ -182,34 +185,32 @@ const RegisterUserPage: React.FC<RegisterUserPageProps> = ({ profiles, editingUs
 
                 <div>
                     <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Perfil de Acesso</label>
-                    <div className="grid grid-cols-1 gap-3">
+                    <select
+                        value={profileId}
+                        onChange={(e) => setProfileId(e.target.value)}
+                        disabled={editingUser?.id === currentUser?.id}
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <option value="">Selecione um perfil...</option>
                         {profiles.map(profile => (
-                            <label
-                                key={profile.id}
-                                className={`flex items-center p-4 rounded-xl border cursor-pointer transition-all ${profileId === profile.id
-                                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                                    : 'border-slate-200 dark:border-slate-700 hover:border-primary/50'
-                                    }`}
-                            >
-                                <input
-                                    type="radio"
-                                    name="profile"
-                                    value={profile.id}
-                                    checked={profileId === profile.id}
-                                    onChange={(e) => setProfileId(e.target.value)}
-                                    className="w-4 h-4 text-primary focus:ring-primary"
-                                />
-                                <div className="ml-3">
-                                    <span className="block text-sm font-medium text-slate-900 dark:text-white">{profile.name}</span>
-                                    <span className="block text-xs text-slate-500">{profile.description}</span>
-                                </div>
-                            </label>
+                            <option key={profile.id} value={profile.id}>{profile.name}</option>
                         ))}
-                    </div>
+                    </select>
+                    {editingUser?.id === currentUser?.id && (
+                        <p className="mt-1 text-[10px] text-amber-600 font-medium flex items-center gap-1">
+                            <span className="material-icons-round text-xs">info</span>
+                            Você não pode alterar seu próprio perfil. Contate outro administrador.
+                        </p>
+                    )}
+                    {profileId && (
+                        <p className="mt-2 text-xs text-slate-500 italic">
+                            {profiles.find(p => p.id === profileId)?.description}
+                        </p>
+                    )}
                 </div>
 
                 <div className="pt-4 flex gap-3">
-                    {editingUser && (
+                    {editingUser && permission.canDelete && editingUser.id !== currentUser?.id && (
                         <button
                             type="button"
                             onClick={handleDelete}
@@ -218,12 +219,14 @@ const RegisterUserPage: React.FC<RegisterUserPageProps> = ({ profiles, editingUs
                             Excluir
                         </button>
                     )}
-                    <button
-                        type="submit"
-                        className="flex-[2] px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all"
-                    >
-                        {editingUser ? 'Atualizar Usuário' : 'Salvar Usuário'}
-                    </button>
+                    {(permission.canWrite || editingUser?.id === currentUser?.id) && (
+                        <button
+                            type="submit"
+                            className="flex-[2] px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all"
+                        >
+                            {editingUser ? 'Atualizar Usuário' : 'Salvar Usuário'}
+                        </button>
+                    )}
                 </div>
             </form>
         </div>

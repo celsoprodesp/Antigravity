@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Client, Order, OrderStatus, Item, OrderItem } from '../types';
+import { Client, Order, OrderStatus, Item, OrderItem, PagePermission } from '../types';
 import { supabase } from '../supabaseClient';
 
 interface NewOrderPageProps {
@@ -11,12 +10,14 @@ interface NewOrderPageProps {
   onNavigateNewClient: () => void;
   onNavigateNewItem: () => void;
   onEditClient: (id: string) => void;
+  permission: PagePermission;
 }
 
 const NewOrderPage: React.FC<NewOrderPageProps> = ({
   clients, items, onCancel, onSave,
-  onNavigateNewClient, onNavigateNewItem, onEditClient
+  onNavigateNewClient, onNavigateNewItem, onEditClient, permission
 }) => {
+
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [status, setStatus] = useState<OrderStatus>('PENDENTE');
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -120,10 +121,6 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
           <h2 className="text-2xl font-bold">Novo Pedido</h2>
           <p className="text-sm text-slate-500">Preencha os dados da venda</p>
         </div>
-        <div className="flex gap-3">
-          <button onClick={onCancel} className="px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Cancelar</button>
-          <button onClick={handleSave} className="bg-primary hover:bg-primary-dark text-white px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all">Salvar Pedido</button>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -191,20 +188,17 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
 
           <div>
             <label className="block text-sm font-medium mb-2">Forma de Pagamento</label>
-            <section className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {['Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'PIX', 'Boleto'].map(method => (
-                <button
-                  key={method}
-                  onClick={() => setPaymentMethod(method)}
-                  className={`px-3 py-2 rounded-xl text-xs font-medium border transition-all ${paymentMethod === method
-                    ? 'border-primary bg-primary/5 text-primary ring-1 ring-primary'
-                    : 'border-slate-200 dark:border-slate-700 hover:border-primary/50 text-slate-600 dark:text-slate-400'
-                    }`}
-                >
-                  {method}
-                </button>
-              ))}
-            </section>
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            >
+              <option value="Cartão de Crédito">Cartão de Crédito</option>
+              <option value="Cartão de Débito">Cartão de Débito</option>
+              <option value="Dinheiro">Dinheiro</option>
+              <option value="PIX">PIX</option>
+              <option value="Boleto">Boleto</option>
+            </select>
           </div>
         </section>
 
@@ -294,6 +288,21 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
             </div>
           )}
         </section>
+      </div>
+
+      <div className="flex gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+        <button onClick={onCancel} className="flex-1 px-8 py-4 rounded-xl font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Cancelar Pedido</button>
+        {permission.canWrite ? (
+          <button onClick={handleSave} className="flex-[2] bg-primary hover:bg-primary-dark text-white px-10 py-4 rounded-xl font-bold shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-2">
+            <span className="material-icons-round">check_circle</span>
+            Finalizar e Salvar Pedido
+          </button>
+        ) : (
+          <button disabled className="flex-[2] bg-slate-200 text-slate-500 px-10 py-4 rounded-xl font-bold cursor-not-allowed flex items-center justify-center gap-2">
+            <span className="material-icons-round">lock</span>
+            Sem Permissão para Salvar
+          </button>
+        )}
       </div>
     </div>
   );

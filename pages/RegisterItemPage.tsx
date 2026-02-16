@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Item, ItemCategory } from '../types';
+import { Item, ItemCategory, PagePermission } from '../types';
 import { supabase } from '../supabaseClient';
 
 interface RegisterItemPageProps {
@@ -11,9 +10,11 @@ interface RegisterItemPageProps {
     onCancel: () => void;
     onNavigateCategory: () => void;
     onEditItem: (id: string) => void;
+    permission: PagePermission;
 }
 
-const RegisterItemPage: React.FC<RegisterItemPageProps> = ({ items, categories, editingItem, onSave, onCancel, onNavigateCategory, onEditItem }) => {
+const RegisterItemPage: React.FC<RegisterItemPageProps> = ({ items, categories, editingItem, onSave, onCancel, onNavigateCategory, onEditItem, permission }) => {
+
     const [name, setName] = useState(editingItem?.name || '');
     const [categoryId, setCategoryId] = useState(editingItem?.categoryId || '');
     const [unitPrice, setUnitPrice] = useState(editingItem?.unitPrice || 0);
@@ -172,12 +173,14 @@ const RegisterItemPage: React.FC<RegisterItemPageProps> = ({ items, categories, 
                 </div>
 
                 <div className="flex gap-3 pt-2">
-                    <button onClick={handleSave} className="flex-1 bg-primary hover:bg-primary-dark text-white py-3 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all">
-                        Salvar Item
-                    </button>
                     <button onClick={handleClear} className="flex-1 px-6 py-3 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                         Limpar Campos
                     </button>
+                    {permission.canWrite && (
+                        <button onClick={handleSave} className="flex-[2] bg-primary hover:bg-primary-dark text-white py-3 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all">
+                            Salvar Item
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -212,12 +215,16 @@ const RegisterItemPage: React.FC<RegisterItemPageProps> = ({ items, categories, 
                                         <td className="px-6 py-4 text-right font-semibold">R$ {item.unitPrice.toLocaleString('pt-BR')}</td>
                                         <td className="px-6 py-4 text-center">
                                             <div className="flex justify-center gap-2">
-                                                <button onClick={() => onEditItem(item.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-all">
-                                                    <span className="material-icons-round text-lg">edit</span>
-                                                </button>
-                                                <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
-                                                    <span className="material-icons-round text-lg">delete</span>
-                                                </button>
+                                                {permission.canWrite && (
+                                                    <button onClick={() => onEditItem(item.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-all">
+                                                        <span className="material-icons-round text-lg">edit</span>
+                                                    </button>
+                                                )}
+                                                {permission.canDelete && (
+                                                    <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
+                                                        <span className="material-icons-round text-lg">delete</span>
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

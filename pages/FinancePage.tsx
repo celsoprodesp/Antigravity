@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Transaction } from '../types';
+import { Transaction, PagePermission } from '../types';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { GoogleGenAI } from "@google/genai";
 import { supabase } from '../supabaseClient';
@@ -10,9 +10,11 @@ interface FinancePageProps {
   transactions: Transaction[];
   transactionCategories: any[];
   onSave: () => void;
+  permission: PagePermission;
 }
 
-const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCategories, onSave }) => {
+const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCategories, onSave, permission }) => {
+
   const [aiInsights, setAiInsights] = useState<string | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
   const [showNewModal, setShowNewModal] = useState(false);
@@ -229,21 +231,25 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
           <p className="text-sm text-slate-500">Analytics e gestão financeira</p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={getAiInsights}
-            disabled={loadingAi}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-emerald-200 dark:shadow-emerald-900/30 flex items-center gap-2 disabled:opacity-50"
-          >
-            <span className="material-icons-round text-base">{loadingAi ? 'sync' : 'auto_awesome'}</span>
-            <span>{loadingAi ? 'Analisando...' : 'Insights Estratégicos'}</span>
-          </button>
-          <button
-            onClick={() => setShowNewModal(true)}
-            className="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
-          >
-            <span className="material-icons-round text-base">add</span>
-            <span>Novo Lançamento</span>
-          </button>
+          {permission.canWrite && (
+            <button
+              onClick={getAiInsights}
+              disabled={loadingAi}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-emerald-200 dark:shadow-emerald-900/30 flex items-center gap-2 disabled:opacity-50"
+            >
+              <span className="material-icons-round text-base">{loadingAi ? 'sync' : 'auto_awesome'}</span>
+              <span>{loadingAi ? 'Analisando...' : 'Insights Estratégicos'}</span>
+            </button>
+          )}
+          {permission.canWrite && (
+            <button
+              onClick={() => setShowNewModal(true)}
+              className="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
+            >
+              <span className="material-icons-round text-base">add</span>
+              <span>Novo Lançamento</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -302,13 +308,15 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
                       <option value="">Selecione...</option>
                       {transactionCategories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
                     </select>
-                    <button
-                      onClick={() => setShowCategoryModal(true)}
-                      className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-primary hover:bg-primary/10 transition-all"
-                      title="Gerenciar Categorias"
-                    >
-                      <span className="material-icons-round text-base">add</span>
-                    </button>
+                    {permission.canWrite && (
+                      <button
+                        onClick={() => setShowCategoryModal(true)}
+                        className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-primary hover:bg-primary/10 transition-all"
+                        title="Gerenciar Categorias"
+                      >
+                        <span className="material-icons-round text-base">add</span>
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -456,12 +464,16 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex justify-center gap-2">
-                      <button onClick={() => handleEditTransaction(t)} className="p-1.5 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-primary transition-all">
-                        <span className="material-icons-round text-sm">edit</span>
-                      </button>
-                      <button onClick={() => handleDeleteTransaction(t.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all">
-                        <span className="material-icons-round text-sm">delete</span>
-                      </button>
+                      {permission.canWrite && (
+                        <button onClick={() => handleEditTransaction(t)} className="p-1.5 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-primary transition-all">
+                          <span className="material-icons-round text-sm">edit</span>
+                        </button>
+                      )}
+                      {permission.canDelete && (
+                        <button onClick={() => handleDeleteTransaction(t.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all">
+                          <span className="material-icons-round text-sm">delete</span>
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -495,19 +507,23 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
               {transactionCategories.map(cat => (
                 <div key={cat.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                   <span className="text-sm font-medium">{cat.name}</span>
-                  <button onClick={() => handleDeleteCategory(cat.id)} className="text-slate-400 hover:text-red-500 transition-colors">
-                    <span className="material-icons-round text-sm">delete</span>
-                  </button>
+                  {permission.canDelete && (
+                    <button onClick={() => handleDeleteCategory(cat.id)} className="text-slate-400 hover:text-red-500 transition-colors">
+                      <span className="material-icons-round text-sm">delete</span>
+                    </button>
+                  )}
                 </div>
               ))}
-              <div className="pt-4">
-                <button
-                  onClick={handleAddCategory}
-                  className="w-full bg-primary hover:bg-primary-dark text-white py-3 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all"
-                >
-                  Salvar Categoria
-                </button>
-              </div>
+              {permission.canWrite && (
+                <div className="pt-4">
+                  <button
+                    onClick={handleAddCategory}
+                    className="w-full bg-primary hover:bg-primary-dark text-white py-3 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all"
+                  >
+                    Salvar Categoria
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

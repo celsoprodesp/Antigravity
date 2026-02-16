@@ -21,11 +21,42 @@ const LoginPage: React.FC = () => {
 
         try {
             if (isSignUp) {
-                const { error } = await supabase.auth.signUp({
+                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
                     email,
                     password,
                 });
-                if (error) throw error;
+                if (signUpError) throw signUpError;
+
+                if (signUpData.user) {
+                    // 1. Buscar o ID do perfil 'TESTE'
+                    const { data: profileData, error: profileError } = await supabase
+                        .from('profiles')
+                        .select('id')
+                        .eq('name', 'TESTE')
+                        .single();
+
+                    let profileId = profileData?.id;
+
+                    // 2. Se não existir, buscar o primeiro perfil disponível (fallback)
+                    if (!profileId) {
+                        const { data: allProfiles } = await supabase.from('profiles').select('id').limit(1);
+                        profileId = allProfiles?.[0]?.id;
+                    }
+
+                    // 3. Criar registro na tabela 'users'
+                    if (profileId) {
+                        const { error: userError } = await supabase.from('users').insert({
+                            id: signUpData.user.id,
+                            name: email.split('@')[0], // Nome inicial baseado no email
+                            email: email,
+                            profile_id: profileId,
+                            role: 'TESTE'
+                        });
+
+                        if (userError) console.error('Erro ao criar registro de usuário:', userError.message);
+                    }
+                }
+
                 setMessage({ type: 'success', text: 'Verifique seu e-mail para confirmar o cadastro!' });
             } else {
                 const { error } = await supabase.auth.signInWithPassword({

@@ -13,12 +13,13 @@ interface AdminPageProps {
     onNavigateRegisterUser: () => void;
     onEditProfile: (id: string) => void;
     onEditUser: (id: string) => void;
+    permission: PagePermission;
 }
 
 const AdminPage: React.FC<AdminPageProps> = ({
     permissions, setPermissions, profiles, users,
     onCancel, onNavigateRegisterProfile, onNavigateRegisterUser,
-    onEditProfile, onEditUser
+    onEditProfile, onEditUser, permission
 }) => {
     const [selectedProfileId, setSelectedProfileId] = useState(profiles[0]?.id || '1');
 
@@ -123,7 +124,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                 <button onClick={onCancel} className="px-6 py-2 rounded-xl text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                     Voltar
                 </button>
-                {selectedProfileId !== '1' && (
+                {selectedProfileId !== '1' && permission.canWrite && (
                     <button
                         onClick={handleSavePermissions}
                         className="ml-3 bg-primary hover:bg-primary-dark text-white px-6 py-2 rounded-xl text-sm font-medium shadow-lg shadow-primary/20 transition-all"

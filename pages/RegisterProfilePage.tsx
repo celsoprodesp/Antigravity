@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Profile } from '../types';
+import { Profile, PagePermission } from '../types';
 import { supabase } from '../supabaseClient';
 import { SYSTEM_PAGES } from '../constants';
 
@@ -8,9 +8,11 @@ interface RegisterProfilePageProps {
     editingProfile?: Profile;
     onSave: (profile: Profile) => void;
     onCancel: () => void;
+    permission: PagePermission;
 }
 
-const RegisterProfilePage: React.FC<RegisterProfilePageProps> = ({ profiles, editingProfile, onSave, onCancel }) => {
+const RegisterProfilePage: React.FC<RegisterProfilePageProps> = ({ profiles, editingProfile, onSave, onCancel, permission }) => {
+
     const [name, setName] = useState(editingProfile?.name || '');
     const [description, setDescription] = useState(editingProfile?.description || '');
 
@@ -132,14 +134,16 @@ const RegisterProfilePage: React.FC<RegisterProfilePageProps> = ({ profiles, edi
                         />
                     </div>
                     <div className="flex gap-3">
-                        {editingProfile && (
+                        {editingProfile && permission.canDelete && (
                             <button onClick={() => handleDelete(editingProfile.id)} className="flex-1 px-6 py-2.5 rounded-xl border border-red-200 text-red-500 font-medium hover:bg-red-50 transition-colors">
                                 Excluir
                             </button>
                         )}
-                        <button onClick={handleSave} className="flex-[2] bg-primary hover:bg-primary-dark text-white py-2.5 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all">
-                            {editingProfile ? 'Atualizar Perfil' : 'Salvar Perfil'}
-                        </button>
+                        {permission.canWrite && (
+                            <button onClick={handleSave} className="flex-[2] bg-primary hover:bg-primary-dark text-white py-2.5 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all">
+                                {editingProfile ? 'Atualizar Perfil' : 'Salvar Perfil'}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -164,10 +168,12 @@ const RegisterProfilePage: React.FC<RegisterProfilePageProps> = ({ profiles, edi
                                     <p className="text-xs text-slate-500">{profile.description}</p>
                                 </div>
                                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => handleEditInList(profile)} className="p-2 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/5 transition-all">
-                                        <span className="material-icons-round text-base">edit</span>
-                                    </button>
-                                    {profile.id !== '1' && (
+                                    {permission.canWrite && (
+                                        <button onClick={() => handleEditInList(profile)} className="p-2 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/5 transition-all">
+                                            <span className="material-icons-round text-base">edit</span>
+                                        </button>
+                                    )}
+                                    {profile.id !== '1' && permission.canDelete && (
                                         <button onClick={() => handleDelete(profile.id)} className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
                                             <span className="material-icons-round text-base">delete</span>
                                         </button>

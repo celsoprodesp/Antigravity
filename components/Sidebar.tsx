@@ -9,22 +9,27 @@ interface SidebarProps {
   setIsExpanded: (expanded: boolean) => void;
   user: { id: string; name: string; email: string; avatar?: string } | null;
   onEditCurrentUser: (id: string) => void;
+  checkPermission: (view: ViewType) => { canRead: boolean; canWrite: boolean };
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isExpanded, setIsExpanded, user, onEditCurrentUser }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isExpanded, setIsExpanded, user, onEditCurrentUser, checkPermission }) => {
+
   const menuItems: { icon: string; view: ViewType; label: string; group?: boolean }[] = [
-    { icon: 'dashboard', view: 'DASHBOARD', label: 'Dashboard' },
-    { icon: 'shopping_bag', view: 'NEW_ORDER', label: 'Novo Pedido' },
-    { icon: 'people', view: 'CLIENTS', label: 'Clientes' },
-    { icon: 'account_balance_wallet', view: 'FINANCE', label: 'Financeiro' },
-    { icon: 'inventory_2', view: 'REGISTER_ITEM', label: 'Itens', group: true },
-    { icon: 'category', view: 'REGISTER_CATEGORY', label: 'Categorias' },
-    { icon: 'admin_panel_settings', view: 'ADMIN', label: 'Administração', group: true },
-    { icon: 'settings', view: 'SETTINGS', label: 'Configurações' },
-  ];
+    { icon: 'dashboard', view: 'DASHBOARD' as ViewType, label: 'Dashboard' },
+    { icon: 'shopping_bag', view: 'NEW_ORDER' as ViewType, label: 'Novo Pedido' },
+    { icon: 'people', view: 'CLIENTS' as ViewType, label: 'Clientes' },
+    { icon: 'account_balance_wallet', view: 'FINANCE' as ViewType, label: 'Financeiro' },
+    { icon: 'inventory_2', view: 'REGISTER_ITEM' as ViewType, label: 'Itens', group: true },
+    { icon: 'category', view: 'REGISTER_CATEGORY' as ViewType, label: 'Categorias' },
+    { icon: 'admin_panel_settings', view: 'ADMIN' as ViewType, label: 'Administração', group: true },
+    { icon: 'settings', view: 'SETTINGS' as ViewType, label: 'Configurações' },
+  ].filter(item => {
+    const perm = checkPermission(item.view);
+    return perm.canRead || perm.canWrite;
+  });
 
   return (
-    <aside className={`${isExpanded ? 'w-64' : 'w-20'} bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col items-center py-6 h-full z-20 shadow-sm shrink-0 transition-all duration-300 ease-in-out relative`}>
+    <aside className={`${isExpanded ? 'w-80' : 'w-20'} bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col items-center py-6 h-full z-20 shadow-sm shrink-0 transition-all duration-300 ease-in-out relative`}>
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="absolute -right-3 top-20 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full p-1 shadow-md z-30 text-slate-400 hover:text-primary transition-colors"
@@ -32,7 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isExpanded, 
         <span className="material-icons-round text-sm">{isExpanded ? 'chevron_left' : 'chevron_right'}</span>
       </button>
 
-      <div className={`mb-8 ${isExpanded ? 'w-48 px-4 flex items-center gap-3' : 'w-10 h-10 flex items-center justify-center'} bg-gradient-to-br from-primary to-blue-600 rounded-xl shadow-lg shadow-primary/20 cursor-pointer transition-all duration-300`} onClick={() => onNavigate('DASHBOARD')}>
+      <div className={`mb-8 ${isExpanded ? 'w-56 px-4 flex items-center gap-3' : 'w-10 h-10 flex items-center justify-center'} bg-gradient-to-br from-primary to-blue-600 rounded-xl shadow-lg shadow-primary/20 cursor-pointer transition-all duration-300`} onClick={() => onNavigate('DASHBOARD')}>
         <div className="w-10 h-10 shrink-0 flex items-center justify-center">
           <span className="text-white font-bold text-lg">E</span>
         </div>

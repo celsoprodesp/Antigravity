@@ -1,14 +1,15 @@
-
 import React, { useState } from 'react';
-import { Client } from '../../types';
+import { Client, PagePermission } from '../types';
 
 interface ClientsPageProps {
   clients: Client[];
   onSelectClient: (id: string) => void;
   onNewClient: () => void;
+  permission: PagePermission;
 }
 
-const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onSelectClient, onNewClient }) => {
+const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onSelectClient, onNewClient, permission }) => {
+
   const [filter, setFilter] = useState('');
 
   const filtered = clients.filter(c =>
@@ -23,12 +24,14 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onSelectClient, onNe
           <h2 className="text-2xl font-bold">Gestão de Clientes</h2>
           <p className="text-sm text-slate-500">Relacionamento e retenção</p>
         </div>
-        <button
-          onClick={onNewClient}
-          className="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
-        >
-          <span className="material-icons-round text-lg">person_add</span> Novo Cliente
-        </button>
+        {permission.canWrite && (
+          <button
+            onClick={onNewClient}
+            className="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
+          >
+            <span className="material-icons-round text-lg">person_add</span> Novo Cliente
+          </button>
+        )}
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">

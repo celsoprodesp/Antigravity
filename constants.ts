@@ -180,6 +180,8 @@ export const SYSTEM_PAGES = [
   { name: 'Cadastro de Itens', key: 'REGISTER_ITEM' },
   { name: 'Cadastro de Categorias', key: 'REGISTER_CATEGORY' },
   { name: 'Cadastro de Perfis', key: 'REGISTER_PROFILE' },
+  { name: 'Cadastro de Usuários', key: 'REGISTER_USER' },
+  { name: 'Configurações', key: 'SETTINGS' },
   { name: 'Administração', key: 'ADMIN' },
 ];
 

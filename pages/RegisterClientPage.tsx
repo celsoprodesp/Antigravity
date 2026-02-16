@@ -1,15 +1,16 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Client } from '../types';
+import { Client, PagePermission } from '../types';
 import { supabase } from '../supabaseClient';
 
 interface RegisterClientPageProps {
     editingClient?: Client;
     onSave: (client: Client) => void;
     onCancel: () => void;
+    permission: PagePermission;
 }
 
-const RegisterClientPage: React.FC<RegisterClientPageProps> = ({ editingClient, onSave, onCancel }) => {
+const RegisterClientPage: React.FC<RegisterClientPageProps> = ({ editingClient, onSave, onCancel, permission }) => {
+
     const [name, setName] = useState(editingClient?.name || '');
     const [company, setCompany] = useState(editingClient?.company || '');
     const [email, setEmail] = useState(editingClient?.email || '');
@@ -107,13 +108,6 @@ const RegisterClientPage: React.FC<RegisterClientPageProps> = ({ editingClient, 
                     <h2 className="text-2xl font-bold">{editingClient ? 'Editar Cliente' : 'Cadastrar Cliente'}</h2>
                     <p className="text-sm text-slate-500">{editingClient ? 'Atualize os dados do cliente' : 'Preencha os dados do novo cliente'}</p>
                 </div>
-                <div className="flex gap-3">
-                    <button onClick={onCancel} className="px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Voltar</button>
-                    {editingClient && (
-                        <button onClick={handleDelete} className="px-6 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">Excluir</button>
-                    )}
-                    <button onClick={handleSave} className="bg-primary hover:bg-primary-dark text-white px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all">Salvar</button>
-                </div>
             </div>
 
             <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
@@ -127,7 +121,7 @@ const RegisterClientPage: React.FC<RegisterClientPageProps> = ({ editingClient, 
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-slate-100 dark:border-slate-800">
                     <div>
                         <label className="block text-sm font-medium mb-2">Nome Completo *</label>
                         <input
@@ -182,6 +176,16 @@ const RegisterClientPage: React.FC<RegisterClientPageProps> = ({ editingClient, 
                             <option value="RISCO">Risco</option>
                         </select>
                     </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                    <button type="button" onClick={onCancel} className="flex-1 px-6 py-3 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Voltar</button>
+                    {editingClient && permission.canDelete && (
+                        <button type="button" onClick={handleDelete} className="flex-1 px-6 py-3 rounded-xl text-sm font-medium text-red-500 border border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">Excluir</button>
+                    )}
+                    {permission.canWrite && (
+                        <button type="button" onClick={handleSave} className="flex-[2] bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all">Salvar Cliente</button>
+                    )}
                 </div>
             </div>
         </div>

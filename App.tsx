@@ -48,12 +48,18 @@ const App: React.FC = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      // Only redirect to Dashboard if we are not already logged in or if it's a fresh sign in from LoginPage
-      // Actually, removing this since we have localStorage persistence for the view.
-      /* if (event === 'SIGNED_IN') {
-        setCurrentView('DASHBOARD');
-      } */
+      if (event === 'SIGNED_IN') {
+        setSession(prev => {
+          if (!prev) {
+            setCurrentView('DASHBOARD');
+            setSelectedId(null);
+            setSelectedClientId(null);
+          }
+          return session;
+        });
+      } else {
+        setSession(session);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -193,24 +199,45 @@ const App: React.FC = () => {
     }
   }, [isDarkMode]);
 
-  const checkPermission = (view: ViewType): boolean => {
-    if (!currentUser) return false;
-    if (currentUser.profileId === '1') return true; // Administrator has full access
-    if (view === 'DASHBOARD') return true; // Dashboard is always accessible for any logged in user
+  const getPagePermission = (view: ViewType): PagePermission => {
+    // Administrator or System Owner always has full access
+    const isAdmin = currentUser?.profileId === '1' || currentUser?.role === 'ADMIN';
 
-    // Views that might share permissions
+    const defaultFullPerm: PagePermission = {
+      id: 'admin',
+      pageName: view,
+      pageKey: view,
+      canRead: true,
+      canWrite: true,
+      canDelete: true,
+      profileId: currentUser?.profileId || ''
+    };
+
+    if (isAdmin) return defaultFullPerm;
+    if (view === 'DASHBOARD') return defaultFullPerm;
+
+    // Mapping views to their base permission keys
     let permissionKey = view;
     if (view === 'CLIENT_PROFILE' || view === 'REGISTER_CLIENT') permissionKey = 'CLIENTS';
     else if (view === 'REGISTER_ITEM' || view === 'REGISTER_CATEGORY') permissionKey = 'REGISTER_ITEM';
     else if (view === 'REGISTER_PROFILE' || view === 'REGISTER_USER') permissionKey = 'ADMIN';
 
-    // If permission not explicitly defined for this view key, default to strict (false)
-    const perm = permissions.find(p => p.profileId === currentUser.profileId && p.pageKey === permissionKey);
-    return perm ? (perm.canRead || perm.canWrite) : false;
+    const perm = permissions.find(p => p.profileId === currentUser?.profileId && p.pageKey === permissionKey);
+
+    return perm || {
+      id: 'denied',
+      pageName: view,
+      pageKey: view,
+      canRead: false,
+      canWrite: false,
+      canDelete: false,
+      profileId: currentUser?.profileId || ''
+    };
   };
 
   const handleNavigate = (view: ViewType, id?: string) => {
-    if (!checkPermission(view)) {
+    const perm = getPagePermission(view);
+    if (!perm.canRead && !perm.canWrite) {
       alert('Acesso negado: Você não tem permissão para acessar esta página.');
       return;
     }
@@ -244,12 +271,14 @@ const App: React.FC = () => {
           clients={clients}
           onSelectClient={(id) => handleNavigate('CLIENT_PROFILE', id)}
           onNewClient={() => handleNavigate('REGISTER_CLIENT')}
+          permission={getPagePermission('CLIENTS')}
         />;
       case 'FINANCE':
         return <FinancePage
           transactions={transactions}
           transactionCategories={transactionCategories}
           onSave={() => refreshData()}
+          permission={getPagePermission('FINANCE')}
         />;
       case 'NEW_ORDER':
         return <NewOrderPage
@@ -263,6 +292,7 @@ const App: React.FC = () => {
           onNavigateNewClient={() => handleNavigate('REGISTER_CLIENT')}
           onNavigateNewItem={() => handleNavigate('REGISTER_ITEM')}
           onEditClient={(id) => handleNavigate('REGISTER_CLIENT', id)}
+          permission={getPagePermission('NEW_ORDER')}
         />;
       case 'CLIENT_PROFILE':
         const client = clients.find(c => c.id === selectedClientId) || clients[0];
@@ -282,6 +312,7 @@ const App: React.FC = () => {
             goBack();
           }}
           onCancel={goBack}
+          permission={getPagePermission('CLIENTS')}
         />;
       case 'REGISTER_ITEM':
         return <RegisterItemPage
@@ -294,6 +325,7 @@ const App: React.FC = () => {
           onCancel={() => handleNavigate('DASHBOARD')}
           onNavigateCategory={() => handleNavigate('REGISTER_CATEGORY')}
           onEditItem={(id) => handleNavigate('REGISTER_ITEM', id)}
+          permission={getPagePermission('REGISTER_ITEM')}
         />;
       case 'REGISTER_CATEGORY':
         return <RegisterCategoryPage
@@ -304,6 +336,7 @@ const App: React.FC = () => {
           }}
           onCancel={() => handleNavigate('DASHBOARD')}
           onEditCategory={(id) => handleNavigate('REGISTER_CATEGORY', id)}
+          permission={getPagePermission('REGISTER_ITEM')}
         />;
       case 'ADMIN':
         return <AdminPage
@@ -316,6 +349,7 @@ const App: React.FC = () => {
           onNavigateRegisterUser={() => handleNavigate('REGISTER_USER')}
           onEditProfile={(id) => handleNavigate('REGISTER_PROFILE', id)}
           onEditUser={(id) => handleNavigate('REGISTER_USER', id)}
+          permission={getPagePermission('ADMIN')}
         />;
       case 'REGISTER_PROFILE':
         return <RegisterProfilePage
@@ -324,16 +358,19 @@ const App: React.FC = () => {
             refreshData();
           }}
           onCancel={() => handleNavigate('ADMIN')}
+          permission={getPagePermission('ADMIN')}
         />;
       case 'REGISTER_USER':
         return <RegisterUserPage
           profiles={profiles}
           editingUser={users.find(u => u.id === selectedId)}
+          currentUser={currentUser}
           onSave={() => {
             refreshData();
-            handleNavigate('ADMIN');
+            goBack();
           }}
-          onCancel={() => handleNavigate('ADMIN')}
+          onCancel={goBack}
+          permission={getPagePermission('ADMIN')}
         />;
       default:
         return <Dashboard orders={orders} setOrders={setOrders} onNewOrder={() => handleNavigate('NEW_ORDER')} />;
@@ -353,6 +390,7 @@ const App: React.FC = () => {
         setIsExpanded={setIsSidebarExpanded}
         user={currentUser}
         onEditCurrentUser={(id) => handleNavigate('REGISTER_USER', id)}
+        checkPermission={getPagePermission}
       />
       <main className="flex-1 flex flex-col overflow-hidden">
         <TopBar
