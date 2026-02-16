@@ -65,6 +65,11 @@ const RegisterCategoryPage: React.FC<RegisterCategoryPageProps> = ({ categories,
         }
     };
 
+    const handleClear = () => {
+        setName('');
+        setDescription('');
+    };
+
     const handleDelete = async (id: string) => {
         if (!confirm('Deseja realmente excluir esta categoria? Atenção: isso poderá afetar itens vinculados.')) return;
 
@@ -84,7 +89,7 @@ const RegisterCategoryPage: React.FC<RegisterCategoryPageProps> = ({ categories,
                     <p className="text-sm text-slate-500">Organize seus produtos por categorias</p>
                 </div>
                 <button onClick={onCancel} className="px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2">
-                    <span className="material-icons-round text-base">arrow_back</span> Voltar
+                    Voltar
                 </button>
             </div>
 
@@ -100,8 +105,8 @@ const RegisterCategoryPage: React.FC<RegisterCategoryPageProps> = ({ categories,
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="w-full">
                         <label className="block text-sm font-medium mb-2">Nome da Categoria *</label>
                         <input
                             ref={nameInputRef}
@@ -110,7 +115,7 @@ const RegisterCategoryPage: React.FC<RegisterCategoryPageProps> = ({ categories,
                             placeholder="Ex: Eletrônicos"
                         />
                     </div>
-                    <div>
+                    <div className="w-full">
                         <label className="block text-sm font-medium mb-2">Descrição</label>
                         <input
                             value={description} onChange={e => setDescription(e.target.value)}
@@ -118,11 +123,15 @@ const RegisterCategoryPage: React.FC<RegisterCategoryPageProps> = ({ categories,
                             placeholder="Breve descrição..."
                         />
                     </div>
-                    <div className="flex items-end">
-                        <button onClick={handleSave} className="w-full bg-primary hover:bg-primary-dark text-white py-2.5 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all">
-                            Salvar Categoria
-                        </button>
-                    </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                    <button onClick={handleSave} className="flex-1 bg-primary hover:bg-primary-dark text-white py-3 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all">
+                        Salvar Categoria
+                    </button>
+                    <button onClick={handleClear} className="flex-1 px-6 py-3 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                        Limpar Campos
+                    </button>
                 </div>
             </div>
 

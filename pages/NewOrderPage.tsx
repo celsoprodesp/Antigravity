@@ -22,6 +22,7 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState('PIX');
 
   const addItem = () => {
     const item = items.find(i => i.id === selectedItemId);
@@ -70,6 +71,7 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
       clientAvatar: selectedClient.avatar,
       clientInitials: selectedClient.initials,
       items: orderItems,
+      paymentMethod,
     };
 
     // 1. Salvar o pedido (Order)
@@ -82,7 +84,8 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
       amount: newOrder.amount,
       time_ago: newOrder.timeAgo,
       client_avatar: newOrder.clientAvatar,
-      client_initials: newOrder.clientInitials
+      client_initials: newOrder.clientInitials,
+      payment_method: newOrder.paymentMethod
     });
 
     if (orderError) {
@@ -184,6 +187,24 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
               <option value="PREPARACAO">Preparação</option>
               <option value="ENVIADO">Enviado</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Forma de Pagamento</label>
+            <section className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {['Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'PIX', 'Boleto'].map(method => (
+                <button
+                  key={method}
+                  onClick={() => setPaymentMethod(method)}
+                  className={`px-3 py-2 rounded-xl text-xs font-medium border transition-all ${paymentMethod === method
+                    ? 'border-primary bg-primary/5 text-primary ring-1 ring-primary'
+                    : 'border-slate-200 dark:border-slate-700 hover:border-primary/50 text-slate-600 dark:text-slate-400'
+                    }`}
+                >
+                  {method}
+                </button>
+              ))}
+            </section>
           </div>
         </section>
 

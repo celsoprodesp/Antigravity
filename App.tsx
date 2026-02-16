@@ -88,12 +88,30 @@ const App: React.FC = () => {
 
   const refreshData = async () => {
     const { data: clientsData } = await supabase.from('clients').select('*');
+    const { data: latestOrders } = await supabase.from('orders').select('client_name, created_at').order('created_at', { ascending: false });
+
     if (clientsData) {
-      setClients(clientsData.map((c: any) => ({
-        ...c,
-        lastPurchase: c.last_purchase,
-        inactivityDays: c.inactivity_days,
-      })));
+      setClients(clientsData.map((c: any) => {
+        const clientOrders = latestOrders?.filter(o =>
+          o.client_name === c.name || o.client_name === c.company
+        ) || [];
+
+        const lastOrder = clientOrders[0];
+        const lastPurchaseDate = lastOrder ? new Date(lastOrder.created_at) : null;
+        const lastPurchaseStr = lastPurchaseDate
+          ? lastPurchaseDate.toLocaleDateString('pt-BR')
+          : 'Nenhuma';
+
+        const inactivity = lastPurchaseDate
+          ? Math.floor((new Date().getTime() - lastPurchaseDate.getTime()) / (1000 * 3600 * 24))
+          : 999;
+
+        return {
+          ...c,
+          lastPurchase: lastPurchaseStr,
+          inactivityDays: inactivity,
+        };
+      }));
     }
 
     // Fetch items with category name if possible, or just map fields
@@ -157,7 +175,8 @@ const App: React.FC = () => {
         amount: o.amount,
         timeAgo: o.time_ago,
         clientAvatar: o.client_avatar,
-        clientInitials: o.client_initials
+        clientInitials: o.client_initials,
+        paymentMethod: o.payment_method
       })));
     }
   };
@@ -272,7 +291,7 @@ const App: React.FC = () => {
           onSave={() => {
             refreshData();
           }}
-          onCancel={goBack}
+          onCancel={() => handleNavigate('DASHBOARD')}
           onNavigateCategory={() => handleNavigate('REGISTER_CATEGORY')}
           onEditItem={(id) => handleNavigate('REGISTER_ITEM', id)}
         />;
@@ -283,7 +302,7 @@ const App: React.FC = () => {
           onSave={() => {
             refreshData();
           }}
-          onCancel={goBack}
+          onCancel={() => handleNavigate('DASHBOARD')}
           onEditCategory={(id) => handleNavigate('REGISTER_CATEGORY', id)}
         />;
       case 'ADMIN':
@@ -295,6 +314,8 @@ const App: React.FC = () => {
           onCancel={() => handleNavigate('DASHBOARD')}
           onNavigateRegisterProfile={() => handleNavigate('REGISTER_PROFILE')}
           onNavigateRegisterUser={() => handleNavigate('REGISTER_USER')}
+          onEditProfile={(id) => handleNavigate('REGISTER_PROFILE', id)}
+          onEditUser={(id) => handleNavigate('REGISTER_USER', id)}
         />;
       case 'REGISTER_PROFILE':
         return <RegisterProfilePage
@@ -330,6 +351,8 @@ const App: React.FC = () => {
         onNavigate={handleNavigate}
         isExpanded={isSidebarExpanded}
         setIsExpanded={setIsSidebarExpanded}
+        user={currentUser}
+        onEditCurrentUser={(id) => handleNavigate('REGISTER_USER', id)}
       />
       <main className="flex-1 flex flex-col overflow-hidden">
         <TopBar

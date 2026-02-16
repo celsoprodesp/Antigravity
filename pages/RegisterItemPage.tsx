@@ -77,6 +77,13 @@ const RegisterItemPage: React.FC<RegisterItemPageProps> = ({ items, categories, 
         onSave({ id: editingItem?.id || '', name, categoryId, categoryName: itemData.category_name, unitPrice, unit });
     };
 
+    const handleClear = () => {
+        setName('');
+        setCategoryId('');
+        setUnitPrice(0);
+        setUnit('un');
+    };
+
     const handleDelete = async (id: string) => {
         if (!confirm('Deseja realmente excluir este item?')) return;
 
@@ -112,8 +119,8 @@ const RegisterItemPage: React.FC<RegisterItemPageProps> = ({ items, categories, 
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="md:col-span-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-3">
                         <label className="block text-sm font-medium mb-2">Nome do Item *</label>
                         <input
                             ref={nameInputRef}
@@ -136,7 +143,7 @@ const RegisterItemPage: React.FC<RegisterItemPageProps> = ({ items, categories, 
                                 onClick={onNavigateCategory}
                                 className="text-primary hover:text-primary-dark text-sm font-medium flex items-center gap-1 transition-colors whitespace-nowrap"
                             >
-                                <span className="material-icons-round text-base">add_circle</span> Categoria
+                                <span className="material-icons-round text-base">add_circle</span>
                             </button>
                         </div>
                     </div>
@@ -162,11 +169,15 @@ const RegisterItemPage: React.FC<RegisterItemPageProps> = ({ items, categories, 
                             className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                         />
                     </div>
-                    <div className="flex items-end">
-                        <button onClick={handleSave} className="w-full bg-primary hover:bg-primary-dark text-white py-2.5 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all">
-                            Salvar Item
-                        </button>
-                    </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                    <button onClick={handleSave} className="flex-1 bg-primary hover:bg-primary-dark text-white py-3 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all">
+                        Salvar Item
+                    </button>
+                    <button onClick={handleClear} className="flex-1 px-6 py-3 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                        Limpar Campos
+                    </button>
                 </div>
             </div>
 

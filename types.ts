@@ -12,6 +12,7 @@ export interface Order {
   clientInitials?: string;
   clientAvatar?: string;
   items?: OrderItem[];
+  paymentMethod?: string;
 }
 
 export interface OrderItem {

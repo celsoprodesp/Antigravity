@@ -13,23 +13,42 @@ const RegisterUserPage: React.FC<RegisterUserPageProps> = ({ profiles, editingUs
     const [name, setName] = useState(editingUser?.name || '');
     const [email, setEmail] = useState(editingUser?.email || '');
     const [profileId, setProfileId] = useState(editingUser?.profileId || profiles[0]?.id || '');
+    const [avatar, setAvatar] = useState(editingUser?.avatar || '');
     const nameInputRef = useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (editingUser) {
             setName(editingUser.name);
             setEmail(editingUser.email);
             setProfileId(editingUser.profileId);
+            setAvatar(editingUser.avatar || '');
 
             setTimeout(() => {
                 if (nameInputRef.current) nameInputRef.current.focus();
-            }, 0);
+            }, 100);
         } else {
             setName('');
             setEmail('');
             setProfileId(profiles[0]?.id || '');
+            setAvatar('');
+
+            setTimeout(() => {
+                if (nameInputRef.current) nameInputRef.current.focus();
+            }, 100);
         }
     }, [editingUser, profiles]);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setAvatar(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -40,7 +59,8 @@ const RegisterUserPage: React.FC<RegisterUserPageProps> = ({ profiles, editingUs
             name,
             email,
             profile_id: profileId,
-            role
+            role,
+            avatar
         };
 
         if (editingUser) {
@@ -60,7 +80,8 @@ const RegisterUserPage: React.FC<RegisterUserPageProps> = ({ profiles, editingUs
                 name,
                 email,
                 profileId,
-                role
+                role,
+                avatar
             };
 
             const { error } = await supabase.from('users').insert({
@@ -68,7 +89,8 @@ const RegisterUserPage: React.FC<RegisterUserPageProps> = ({ profiles, editingUs
                 name: newUser.name,
                 email: newUser.email,
                 profile_id: newUser.profileId,
-                role: newUser.role
+                role: newUser.role,
+                avatar: newUser.avatar
             });
 
             if (error) {
@@ -107,6 +129,31 @@ const RegisterUserPage: React.FC<RegisterUserPageProps> = ({ profiles, editingUs
             </div>
 
             <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+
+                {/* Upload de Foto */}
+                <div className="flex flex-col items-center gap-4 mb-4">
+                    <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-24 h-24 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center cursor-pointer hover:border-primary transition-all overflow-hidden bg-slate-50 dark:bg-slate-800 relative group"
+                    >
+                        {avatar ? (
+                            <img src={avatar} alt="Preview" className="w-full h-full object-cover" />
+                        ) : (
+                            <span className="material-icons-round text-3xl text-slate-400 group-hover:text-primary">add_a_photo</span>
+                        )}
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-white text-[10px] font-bold">TROCAR FOTO</span>
+                        </div>
+                    </div>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleFileChange}
+                    />
+                    <p className="text-xs text-slate-500">Clique para {avatar ? 'alterar' : 'adicionar'} foto de perfil</p>
+                </div>
 
                 <div>
                     <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Nome Completo</label>

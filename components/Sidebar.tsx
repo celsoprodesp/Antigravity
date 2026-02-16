@@ -7,9 +7,11 @@ interface SidebarProps {
   onNavigate: (view: ViewType) => void;
   isExpanded: boolean;
   setIsExpanded: (expanded: boolean) => void;
+  user: { id: string; name: string; email: string; avatar?: string } | null;
+  onEditCurrentUser: (id: string) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isExpanded, setIsExpanded }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isExpanded, setIsExpanded, user, onEditCurrentUser }) => {
   const menuItems: { icon: string; view: ViewType; label: string; group?: boolean }[] = [
     { icon: 'dashboard', view: 'DASHBOARD', label: 'Dashboard' },
     { icon: 'shopping_bag', view: 'NEW_ORDER', label: 'Novo Pedido' },
@@ -63,15 +65,28 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isExpanded, 
       </nav>
 
       <div className={`mt-auto w-full ${isExpanded ? 'px-4' : 'flex justify-center'}`}>
-        <div className={`flex items-center gap-3 p-2 rounded-xl border border-transparent ${isExpanded ? 'hover:bg-slate-50 dark:hover:bg-slate-800/50' : ''} transition-all`}>
-          <button className="w-10 h-10 rounded-full overflow-hidden border-2 border-white dark:border-slate-700 shadow-sm hover:border-primary transition-colors duration-200 shrink-0 relative">
-            <img alt="User" className="w-full h-full object-cover" src="https://picsum.photos/seed/user/100" />
+        <div
+          onClick={() => user?.id && onEditCurrentUser(user.id)}
+          className={`flex items-center gap-3 p-2 rounded-xl border border-transparent cursor-pointer ${isExpanded ? 'hover:bg-slate-50 dark:hover:bg-slate-800/50' : 'hover:scale-110'} transition-all`}
+        >
+          <button className="w-10 h-10 rounded-full overflow-hidden border-2 border-white dark:border-slate-700 shadow-sm hover:border-primary transition-colors duration-200 shrink-0 relative bg-slate-200 dark:bg-slate-700">
+            {user?.avatar ? (
+              <img alt="User" className="w-full h-full object-cover" src={user.avatar} />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center font-bold text-slate-500">
+                {user?.name?.charAt(0) || 'U'}
+              </div>
+            )}
             <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
           </button>
           {isExpanded && (
             <div className="flex-1 min-w-0 overflow-hidden">
-              <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate leading-none mb-1">Empresa Admin</p>
-              <p className="text-[10px] text-slate-500 truncate leading-none">admin@exemplo.com</p>
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate leading-none mb-1">
+                {user?.name || 'Carregando...'}
+              </p>
+              <p className="text-[10px] text-slate-500 truncate leading-none">
+                {user?.email || ''}
+              </p>
             </div>
           )}
         </div>

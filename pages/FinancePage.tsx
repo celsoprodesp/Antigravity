@@ -29,6 +29,7 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
   const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [newCatName, setNewCatName] = useState('');
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
 
   const filteredTransactions = transactions.filter(t => {
@@ -164,23 +165,43 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
       date: newDate
     };
 
-    const { error } = await supabase.from('transactions').insert({
-      id: Math.random().toString(36).substr(2, 9),
-      ...trData
-    });
-
-    if (error) {
-      alert('Erro ao salvar lançamento: ' + error.message);
-      return;
+    if (editingTransaction) {
+      const { error } = await supabase.from('transactions').update(trData).eq('id', editingTransaction.id);
+      if (error) return alert('Erro ao atualizar lançamento: ' + error.message);
+    } else {
+      const { error } = await supabase.from('transactions').insert({
+        id: Math.random().toString(36).substr(2, 9),
+        ...trData
+      });
+      if (error) return alert('Erro ao salvar lançamento: ' + error.message);
     }
 
     onSave();
+    setEditingTransaction(null);
     setNewDesc('');
     setNewCategory('');
     setNewAmount(0);
     setNewType('RECEITA');
     setNewDate(new Date().toISOString().split('T')[0]);
     setShowNewModal(false);
+  };
+
+  const handleDeleteTransaction = async (id: string) => {
+    if (!confirm('Deseja realmente excluir este lançamento?')) return;
+    const { error } = await supabase.from('transactions').delete().eq('id', id);
+    if (error) return alert(error.message);
+    onSave();
+  };
+
+  const handleEditTransaction = (t: Transaction) => {
+    setEditingTransaction(t);
+    setNewDesc(t.description);
+    setNewCategory(t.category);
+    setNewAmount(t.amount);
+    setNewType(t.type);
+    // Assuming date format matches or we just use current date
+    setNewDate(new Date().toISOString().split('T')[0]);
+    setShowNewModal(true);
   };
 
   const handleAddCategory = async () => {
@@ -232,7 +253,7 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-lg p-6 space-y-6 mx-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold flex items-center gap-2">
-                <span className="material-icons-outlined text-primary">receipt_long</span> Novo Lançamento
+                <span className="material-icons-outlined text-primary">receipt_long</span> {editingTransaction ? 'Editar Lançamento' : 'Novo Lançamento'}
               </h3>
               <button onClick={() => setShowNewModal(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
                 <span className="material-icons-round">close</span>
@@ -286,7 +307,7 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
                       className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-primary hover:bg-primary/10 transition-all"
                       title="Gerenciar Categorias"
                     >
-                      <span className="material-icons-round text-base">settings</span>
+                      <span className="material-icons-round text-base">add</span>
                     </button>
                   </div>
                 </div>
@@ -419,6 +440,7 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
                 <th className="px-6 py-4">Descrição</th>
                 <th className="px-6 py-4">Categoria</th>
                 <th className="px-6 py-4 text-right">Valor</th>
+                <th className="px-6 py-4 text-center">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
@@ -431,6 +453,16 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
                   </td>
                   <td className={`px-6 py-4 text-right font-bold ${t.type === 'RECEITA' ? 'text-emerald-500' : 'text-rose-500'}`}>
                     {t.type === 'RECEITA' ? '+' : '-'} R$ {t.amount.toLocaleString('pt-BR')}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex justify-center gap-2">
+                      <button onClick={() => handleEditTransaction(t)} className="p-1.5 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-primary transition-all">
+                        <span className="material-icons-round text-sm">edit</span>
+                      </button>
+                      <button onClick={() => handleDeleteTransaction(t.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all">
+                        <span className="material-icons-round text-sm">delete</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -449,21 +481,17 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
               </button>
             </div>
 
-            <div className="flex gap-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Nome da Categoria</label>
               <input
                 value={newCatName} onChange={e => setNewCatName(e.target.value)}
-                placeholder="Nova categoria..."
-                className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm"
+                placeholder="Ex: Marketing, Viagens..."
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
-              <button
-                onClick={handleAddCategory}
-                className="bg-primary text-white p-2 rounded-xl"
-              >
-                <span className="material-icons-round">add</span>
-              </button>
             </div>
 
             <div className="space-y-2 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Categorias Atuais</p>
               {transactionCategories.map(cat => (
                 <div key={cat.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                   <span className="text-sm font-medium">{cat.name}</span>
@@ -472,9 +500,14 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
                   </button>
                 </div>
               ))}
-              {transactionCategories.length === 0 && (
-                <p className="text-center text-sm text-slate-500 py-4">Nenhuma categoria cadastrada</p>
-              )}
+              <div className="pt-4">
+                <button
+                  onClick={handleAddCategory}
+                  className="w-full bg-primary hover:bg-primary-dark text-white py-3 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all"
+                >
+                  Salvar Categoria
+                </button>
+              </div>
             </div>
           </div>
         </div>
