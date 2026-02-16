@@ -1,30 +1,94 @@
-import React, { useState } from 'react';
-import { Profile, User } from '../../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Profile, User } from '../types';
+import { supabase } from '../supabaseClient';
 
 interface RegisterUserPageProps {
     profiles: Profile[];
-    onSave: (newUser: User) => void;
+    editingUser?: User;
+    onSave: (user: User) => void;
     onCancel: () => void;
 }
 
-const RegisterUserPage: React.FC<RegisterUserPageProps> = ({ profiles, onSave, onCancel }) => {
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [profileId, setProfileId] = useState(profiles[0]?.id || '');
+const RegisterUserPage: React.FC<RegisterUserPageProps> = ({ profiles, editingUser, onSave, onCancel }) => {
+    const [name, setName] = useState(editingUser?.name || '');
+    const [email, setEmail] = useState(editingUser?.email || '');
+    const [profileId, setProfileId] = useState(editingUser?.profileId || profiles[0]?.id || '');
+    const nameInputRef = useRef<HTMLInputElement>(null);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    useEffect(() => {
+        if (editingUser) {
+            setName(editingUser.name);
+            setEmail(editingUser.email);
+            setProfileId(editingUser.profileId);
+
+            setTimeout(() => {
+                if (nameInputRef.current) nameInputRef.current.focus();
+            }, 0);
+        } else {
+            setName('');
+            setEmail('');
+            setProfileId(profiles[0]?.id || '');
+        }
+    }, [editingUser, profiles]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!name || !email || !profileId) return;
 
-        const newUser: User = {
-            id: Date.now().toString(),
+        const role = profiles.find(p => p.id === profileId)?.name || 'Usuário';
+        const userData = {
             name,
             email,
-            profileId,
-            role: profiles.find(p => p.id === profileId)?.name || 'Usuário'
+            profile_id: profileId,
+            role
         };
 
-        onSave(newUser);
+        if (editingUser) {
+            const { error } = await supabase
+                .from('users')
+                .update(userData)
+                .eq('id', editingUser.id);
+
+            if (error) {
+                alert('Erro ao atualizar usuário: ' + error.message);
+                return;
+            }
+            onSave({ ...editingUser, ...userData, profileId: userData.profile_id });
+        } else {
+            const newUser: User = {
+                id: Date.now().toString(),
+                name,
+                email,
+                profileId,
+                role
+            };
+
+            const { error } = await supabase.from('users').insert({
+                id: newUser.id,
+                name: newUser.name,
+                email: newUser.email,
+                profile_id: newUser.profileId,
+                role: newUser.role
+            });
+
+            if (error) {
+                alert('Erro ao salvar usuário: ' + error.message);
+                return;
+            }
+            onSave(newUser);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!editingUser) return;
+        if (!confirm('Deseja realmente excluir este usuário?')) return;
+
+        const { error } = await supabase.from('users').delete().eq('id', editingUser.id);
+        if (error) {
+            alert('Erro ao excluir usuário: ' + error.message);
+            return;
+        }
+        onSave(editingUser); // Trigger refresh
     };
 
     return (
@@ -37,8 +101,8 @@ const RegisterUserPage: React.FC<RegisterUserPageProps> = ({ profiles, onSave, o
                     <span className="material-icons-round text-slate-500">arrow_back</span>
                 </button>
                 <div>
-                    <h2 className="text-2xl font-bold">Novo Usuário</h2>
-                    <p className="text-sm text-slate-500">Cadastre um novo usuário no sistema</p>
+                    <h2 className="text-2xl font-bold">{editingUser ? 'Editar Usuário' : 'Novo Usuário'}</h2>
+                    <p className="text-sm text-slate-500">{editingUser ? 'Atualize os dados do usuário' : 'Cadastre um novo usuário no sistema'}</p>
                 </div>
             </div>
 
@@ -47,6 +111,7 @@ const RegisterUserPage: React.FC<RegisterUserPageProps> = ({ profiles, onSave, o
                 <div>
                     <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Nome Completo</label>
                     <input
+                        ref={nameInputRef}
                         type="text"
                         required
                         value={name}
@@ -97,18 +162,20 @@ const RegisterUserPage: React.FC<RegisterUserPageProps> = ({ profiles, onSave, o
                 </div>
 
                 <div className="pt-4 flex gap-3">
-                    <button
-                        type="button"
-                        onClick={onCancel}
-                        className="flex-1 px-6 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                    >
-                        Cancelar
-                    </button>
+                    {editingUser && (
+                        <button
+                            type="button"
+                            onClick={handleDelete}
+                            className="flex-1 px-6 py-3 rounded-xl border border-red-200 text-red-500 font-medium hover:bg-red-50 transition-colors"
+                        >
+                            Excluir
+                        </button>
+                    )}
                     <button
                         type="submit"
-                        className="flex-1 px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all"
+                        className="flex-[2] px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all"
                     >
-                        Salvar Usuário
+                        {editingUser ? 'Atualizar Usuário' : 'Salvar Usuário'}
                     </button>
                 </div>
             </form>

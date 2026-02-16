@@ -1,47 +1,117 @@
 
-import React, { useState } from 'react';
-import { Client } from '../../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Client } from '../types';
+import { supabase } from '../supabaseClient';
 
 interface RegisterClientPageProps {
+    editingClient?: Client;
     onSave: (client: Client) => void;
     onCancel: () => void;
 }
 
-const RegisterClientPage: React.FC<RegisterClientPageProps> = ({ onSave, onCancel }) => {
-    const [name, setName] = useState('');
-    const [company, setCompany] = useState('');
-    const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
-    const [status, setStatus] = useState<'ATIVO' | 'INATIVO'>('ATIVO');
-    const [classification, setClassification] = useState<'NORMAL' | 'VIP' | 'RISCO'>('NORMAL');
+const RegisterClientPage: React.FC<RegisterClientPageProps> = ({ editingClient, onSave, onCancel }) => {
+    const [name, setName] = useState(editingClient?.name || '');
+    const [company, setCompany] = useState(editingClient?.company || '');
+    const [email, setEmail] = useState(editingClient?.email || '');
+    const [phone, setPhone] = useState(editingClient?.phone || '');
+    const [status, setStatus] = useState<'ATIVO' | 'INATIVO'>(editingClient?.status || 'ATIVO');
+    const [classification, setClassification] = useState<'NORMAL' | 'VIP' | 'RISCO'>(editingClient?.classification || 'NORMAL');
+    const nameInputRef = useRef<HTMLInputElement>(null);
 
-    const handleSave = () => {
+    useEffect(() => {
+        if (editingClient) {
+            setName(editingClient.name);
+            setCompany(editingClient.company);
+            setEmail(editingClient.email);
+            setPhone(editingClient.phone);
+            setStatus(editingClient.status);
+            setClassification(editingClient.classification);
+
+            setTimeout(() => {
+                if (nameInputRef.current) nameInputRef.current.focus();
+            }, 0);
+        } else {
+            setName('');
+            setCompany('');
+            setEmail('');
+            setPhone('');
+            setStatus('ATIVO');
+            setClassification('NORMAL');
+        }
+    }, [editingClient]);
+
+    const handleSave = async () => {
         if (!name || !email) return alert('Preencha nome e email');
         const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-        const newClient: Client = {
-            id: Math.random().toString(36).substr(2, 9),
+
+        const clientData = {
             name,
             company: company || 'Autônomo',
             email,
             phone,
-            lastPurchase: 'Nunca',
-            inactivityDays: 0,
             initials,
             status,
             classification,
         };
-        onSave(newClient);
+
+        if (editingClient) {
+            const { error } = await supabase
+                .from('clients')
+                .update(clientData)
+                .eq('id', editingClient.id);
+
+            if (error) {
+                alert('Erro ao atualizar cliente: ' + error.message);
+                return;
+            }
+            onSave({ ...editingClient, ...clientData });
+        } else {
+            const newClient: Client = {
+                id: Math.random().toString(36).substr(2, 9),
+                ...clientData,
+                lastPurchase: 'Nunca',
+                inactivityDays: 0,
+            };
+
+            const { error } = await supabase.from('clients').insert({
+                id: newClient.id,
+                ...clientData,
+                last_purchase: newClient.lastPurchase,
+                inactivity_days: newClient.inactivityDays
+            });
+
+            if (error) {
+                alert('Erro ao salvar cliente: ' + error.message);
+                return;
+            }
+            onSave(newClient);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!editingClient) return;
+        if (!confirm('Deseja realmente excluir este cliente?')) return;
+
+        const { error } = await supabase.from('clients').delete().eq('id', editingClient.id);
+        if (error) {
+            alert('Erro ao excluir cliente: ' + error.message);
+            return;
+        }
+        onSave(editingClient); // Pass the client to notify deletion (App will refresh list)
     };
 
     return (
         <div className="max-w-2xl mx-auto space-y-8 animate-fadeIn">
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-2xl font-bold">Cadastrar Cliente</h2>
-                    <p className="text-sm text-slate-500">Preencha os dados do novo cliente</p>
+                    <h2 className="text-2xl font-bold">{editingClient ? 'Editar Cliente' : 'Cadastrar Cliente'}</h2>
+                    <p className="text-sm text-slate-500">{editingClient ? 'Atualize os dados do cliente' : 'Preencha os dados do novo cliente'}</p>
                 </div>
                 <div className="flex gap-3">
                     <button onClick={onCancel} className="px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Voltar</button>
+                    {editingClient && (
+                        <button onClick={handleDelete} className="px-6 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">Excluir</button>
+                    )}
                     <button onClick={handleSave} className="bg-primary hover:bg-primary-dark text-white px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all">Salvar</button>
                 </div>
             </div>
@@ -61,6 +131,7 @@ const RegisterClientPage: React.FC<RegisterClientPageProps> = ({ onSave, onCance
                     <div>
                         <label className="block text-sm font-medium mb-2">Nome Completo *</label>
                         <input
+                            ref={nameInputRef}
                             value={name} onChange={e => setName(e.target.value)}
                             className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                             placeholder="João da Silva"

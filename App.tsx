@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ViewType, Order, Client, Transaction, Item, ItemCategory, PagePermission, Profile, User } from '../types';
+import { ViewType, Order, Client, Transaction, Item, ItemCategory, PagePermission, Profile, User } from './types';
 import { INITIAL_ORDERS, INITIAL_CLIENTS, INITIAL_TRANSACTIONS, INITIAL_ITEMS, INITIAL_CATEGORIES, INITIAL_PERMISSIONS, INITIAL_PROFILES, INITIAL_USERS } from './constants';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
@@ -21,18 +21,22 @@ import { Session } from '@supabase/supabase-js';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
-  const [currentView, setCurrentView] = useState<ViewType>('DASHBOARD');
-  const [previousView, setPreviousView] = useState<ViewType>('DASHBOARD');
-  const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
-  const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
-  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
-  const [items, setItems] = useState<Item[]>(INITIAL_ITEMS);
-  const [categories, setCategories] = useState<ItemCategory[]>(INITIAL_CATEGORIES);
-  const [permissions, setPermissions] = useState<PagePermission[]>(INITIAL_PERMISSIONS);
-  const [profiles, setProfiles] = useState<Profile[]>(INITIAL_PROFILES);
-  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<ViewType>((localStorage.getItem('erp_currentView') as ViewType) || 'DASHBOARD');
+  const [previousView, setPreviousView] = useState<ViewType>((localStorage.getItem('erp_previousView') as ViewType) || 'DASHBOARD');
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
+  const [categories, setCategories] = useState<ItemCategory[]>([]);
+  const [permissions, setPermissions] = useState<PagePermission[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(localStorage.getItem('erp_selectedClientId'));
+  const [selectedId, setSelectedId] = useState<string | null>(localStorage.getItem('erp_selectedId'));
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(localStorage.getItem('erp_sidebarExpanded') === 'true');
+  const [transactionCategories, setTransactionCategories] = useState<any[]>([]);
 
   useEffect(() => {
     // Verificar sessão atual
@@ -43,11 +47,123 @@ const App: React.FC = () => {
     // Escutar mudanças de autenticação
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+      // Only redirect to Dashboard if we are not already logged in or if it's a fresh sign in from LoginPage
+      // Actually, removing this since we have localStorage persistence for the view.
+      /* if (event === 'SIGNED_IN') {
+        setCurrentView('DASHBOARD');
+      } */
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  // Persist state to localStorage
+  useEffect(() => {
+    localStorage.setItem('erp_currentView', currentView);
+    localStorage.setItem('erp_previousView', previousView);
+    localStorage.setItem('erp_sidebarExpanded', isSidebarExpanded.toString());
+  }, [currentView, previousView, isSidebarExpanded]);
+
+  useEffect(() => {
+    if (selectedId) localStorage.setItem('erp_selectedId', selectedId);
+    else localStorage.removeItem('erp_selectedId');
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (selectedClientId) localStorage.setItem('erp_selectedClientId', selectedClientId);
+    else localStorage.removeItem('erp_selectedClientId');
+  }, [selectedClientId]);
+
+  // Resolve current user when session or users list changes
+  useEffect(() => {
+    if (session?.user?.email && users.length > 0) {
+      const foundUser = users.find(u => u.email === session.user.email);
+      if (foundUser) {
+        setCurrentUser(foundUser);
+      }
+    }
+  }, [session, users]);
+
+  const refreshData = async () => {
+    const { data: clientsData } = await supabase.from('clients').select('*');
+    if (clientsData) {
+      setClients(clientsData.map((c: any) => ({
+        ...c,
+        lastPurchase: c.last_purchase,
+        inactivityDays: c.inactivity_days,
+      })));
+    }
+
+    // Fetch items with category name if possible, or just map fields
+    const { data: itemsData } = await supabase.from('items').select('*, item_categories(name)');
+    if (itemsData) {
+      setItems(itemsData.map((i: any) => ({
+        ...i,
+        unitPrice: i.unit_price,
+        categoryId: i.category_id,
+        categoryName: i.item_categories?.name || '', // Helper to get category name from join
+      })));
+    }
+
+    const { data: categoriesData } = await supabase.from('item_categories').select('*');
+    if (categoriesData) setCategories(categoriesData);
+
+    const { data: permissionsData } = await supabase.from('page_permissions').select('*');
+    if (permissionsData) {
+      setPermissions(permissionsData.map((p: any) => ({
+        id: p.id,
+        pageName: p.page_name,
+        pageKey: p.page_key,
+        canRead: p.can_read,
+        canWrite: p.can_write,
+        canDelete: p.can_delete,
+        profileId: p.profile_id,
+      })));
+    }
+
+    const { data: profilesData } = await supabase.from('profiles').select('*');
+    if (profilesData) setProfiles(profilesData);
+
+    const { data: usersData } = await supabase.from('users').select('*');
+    if (usersData) {
+      setUsers(usersData.map((u: any) => ({
+        ...u,
+        profileId: u.profile_id,
+      })));
+    }
+
+    const { data: trData } = await supabase.from('transactions').select('*').order('date', { ascending: false });
+    if (trData) {
+      setTransactions(trData.map((t: any) => ({
+        ...t,
+        date: new Date(t.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+      })));
+    }
+
+    const { data: trCats } = await supabase.from('transaction_categories').select('*');
+    if (trCats) setTransactionCategories(trCats);
+
+    // Fetch real orders from Supabase
+    const { data: ordersData } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    if (ordersData) {
+      setOrders(ordersData.map((o: any) => ({
+        id: o.id,
+        orderNumber: o.order_number,
+        clientName: o.client_name,
+        description: o.description,
+        status: o.status,
+        amount: o.amount,
+        timeAgo: o.time_ago,
+        clientAvatar: o.client_avatar,
+        clientInitials: o.client_initials
+      })));
+    }
+  };
+
+  useEffect(() => {
+    refreshData();
   }, []);
 
   useEffect(() => {
@@ -58,10 +174,38 @@ const App: React.FC = () => {
     }
   }, [isDarkMode]);
 
+  const checkPermission = (view: ViewType): boolean => {
+    if (!currentUser) return false;
+    if (currentUser.profileId === '1') return true; // Administrator has full access
+    if (view === 'DASHBOARD') return true; // Dashboard is always accessible for any logged in user
+
+    // Views that might share permissions
+    let permissionKey = view;
+    if (view === 'CLIENT_PROFILE' || view === 'REGISTER_CLIENT') permissionKey = 'CLIENTS';
+    else if (view === 'REGISTER_ITEM' || view === 'REGISTER_CATEGORY') permissionKey = 'REGISTER_ITEM';
+    else if (view === 'REGISTER_PROFILE' || view === 'REGISTER_USER') permissionKey = 'ADMIN';
+
+    // If permission not explicitly defined for this view key, default to strict (false)
+    const perm = permissions.find(p => p.profileId === currentUser.profileId && p.pageKey === permissionKey);
+    return perm ? (perm.canRead || perm.canWrite) : false;
+  };
+
   const handleNavigate = (view: ViewType, id?: string) => {
+    if (!checkPermission(view)) {
+      alert('Acesso negado: Você não tem permissão para acessar esta página.');
+      return;
+    }
     setPreviousView(currentView);
     setCurrentView(view);
-    if (id) setSelectedClientId(id);
+    if (id) {
+      setSelectedId(id);
+      if (view === 'CLIENT_PROFILE' || view === 'REGISTER_CLIENT') {
+        setSelectedClientId(id);
+      }
+    } else {
+      setSelectedId(null);
+      setSelectedClientId(null);
+    }
   };
 
   const goBack = () => {
@@ -83,7 +227,11 @@ const App: React.FC = () => {
           onNewClient={() => handleNavigate('REGISTER_CLIENT')}
         />;
       case 'FINANCE':
-        return <FinancePage transactions={transactions} setTransactions={setTransactions} />;
+        return <FinancePage
+          transactions={transactions}
+          transactionCategories={transactionCategories}
+          onSave={() => refreshData()}
+        />;
       case 'NEW_ORDER':
         return <NewOrderPage
           clients={clients}
@@ -95,6 +243,7 @@ const App: React.FC = () => {
           }}
           onNavigateNewClient={() => handleNavigate('REGISTER_CLIENT')}
           onNavigateNewItem={() => handleNavigate('REGISTER_ITEM')}
+          onEditClient={(id) => handleNavigate('REGISTER_CLIENT', id)}
         />;
       case 'CLIENT_PROFILE':
         const client = clients.find(c => c.id === selectedClientId) || clients[0];
@@ -102,14 +251,15 @@ const App: React.FC = () => {
           client={client}
           orders={orders.filter(o => o.clientName.includes(client.name) || o.clientName.includes(client.company))}
           onNewOrder={() => handleNavigate('NEW_ORDER')}
-          onEditClient={() => handleNavigate('REGISTER_CLIENT')}
+          onEditClient={() => handleNavigate('REGISTER_CLIENT', selectedClientId || undefined)}
         />;
       case 'SETTINGS':
         return <SettingsPage isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />;
       case 'REGISTER_CLIENT':
         return <RegisterClientPage
-          onSave={(newClient) => {
-            setClients(prev => [...prev, newClient]);
+          editingClient={clients.find(c => c.id === selectedClientId)}
+          onSave={() => {
+            refreshData(); // Refresh list after save
             goBack();
           }}
           onCancel={goBack}
@@ -118,19 +268,23 @@ const App: React.FC = () => {
         return <RegisterItemPage
           items={items}
           categories={categories}
-          onSave={(newItem) => {
-            setItems(prev => [...prev, newItem]);
+          editingItem={items.find(i => i.id === selectedId)}
+          onSave={() => {
+            refreshData();
           }}
           onCancel={goBack}
           onNavigateCategory={() => handleNavigate('REGISTER_CATEGORY')}
+          onEditItem={(id) => handleNavigate('REGISTER_ITEM', id)}
         />;
       case 'REGISTER_CATEGORY':
         return <RegisterCategoryPage
           categories={categories}
-          onSave={(newCategory) => {
-            setCategories(prev => [...prev, newCategory]);
+          editingCategory={categories.find(c => c.id === selectedId)}
+          onSave={() => {
+            refreshData();
           }}
           onCancel={goBack}
+          onEditCategory={(id) => handleNavigate('REGISTER_CATEGORY', id)}
         />;
       case 'ADMIN':
         return <AdminPage
@@ -145,16 +299,17 @@ const App: React.FC = () => {
       case 'REGISTER_PROFILE':
         return <RegisterProfilePage
           profiles={profiles}
-          onSave={(newProfile) => {
-            setProfiles(prev => [...prev, newProfile]);
+          onSave={() => {
+            refreshData();
           }}
           onCancel={() => handleNavigate('ADMIN')}
         />;
       case 'REGISTER_USER':
         return <RegisterUserPage
           profiles={profiles}
-          onSave={(newUser) => {
-            setUsers(prev => [...prev, newUser]);
+          editingUser={users.find(u => u.id === selectedId)}
+          onSave={() => {
+            refreshData();
             handleNavigate('ADMIN');
           }}
           onCancel={() => handleNavigate('ADMIN')}
@@ -170,9 +325,26 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-100 transition-colors duration-300">
-      <Sidebar currentView={currentView} onNavigate={handleNavigate} />
+      <Sidebar
+        currentView={currentView}
+        onNavigate={handleNavigate}
+        isExpanded={isSidebarExpanded}
+        setIsExpanded={setIsSidebarExpanded}
+      />
       <main className="flex-1 flex flex-col overflow-hidden">
-        <TopBar onSearch={(q) => console.log('Search:', q)} onSignOut={handleSignOut} />
+        <TopBar
+          onSearch={(query) => {
+            const q = query.toLowerCase();
+            if (q.includes('client')) handleNavigate('CLIENTS');
+            else if (q.includes('pedid') || q.includes('venda')) handleNavigate('NEW_ORDER');
+            else if (q.includes('financ') || q.includes('caixa')) handleNavigate('FINANCE');
+            else if (q.includes('config')) handleNavigate('SETTINGS');
+            else if (q.includes('admin')) handleNavigate('ADMIN');
+            else if (q.includes('inicio') || q.includes('dash')) handleNavigate('DASHBOARD');
+            else if (q.includes('perfil')) handleNavigate('CLIENT_PROFILE');
+          }}
+          onSignOut={handleSignOut}
+        />
         <div className="flex-1 overflow-y-auto p-4 md:p-8 animate-fadeIn">
           {renderView()}
         </div>

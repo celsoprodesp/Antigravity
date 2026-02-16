@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { Client, Order, OrderStatus, Item, OrderItem, Transaction } from '../types';
 
 const LoginPage: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -7,6 +8,11 @@ const LoginPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [isSignUp, setIsSignUp] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+    useEffect(() => {
+        setEmail('');
+        setPassword('');
+    }, []);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();

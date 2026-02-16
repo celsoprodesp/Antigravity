@@ -1,5 +1,5 @@
 
-import { Order, Client, Transaction, Item, ItemCategory, PagePermission, Profile } from '../types';
+import { Order, Client, Transaction, Item, ItemCategory, PagePermission, Profile } from './types';
 
 export const INITIAL_ORDERS: Order[] = [
   {
@@ -171,12 +171,25 @@ export const INITIAL_PERMISSIONS: PagePermission[] = [
   { id: '17', pageName: 'Administração', pageKey: 'ADMIN', canRead: false, canWrite: false, canDelete: false, profileId: '2' },
 ];
 
+export const SYSTEM_PAGES = [
+  { name: 'Dashboard', key: 'DASHBOARD' },
+  { name: 'Novo Pedido', key: 'NEW_ORDER' },
+  { name: 'Gestão de Clientes', key: 'CLIENTS' },
+  { name: 'Fluxo de Caixa', key: 'FINANCE' },
+  { name: 'Cadastro de Clientes', key: 'REGISTER_CLIENT' },
+  { name: 'Cadastro de Itens', key: 'REGISTER_ITEM' },
+  { name: 'Cadastro de Categorias', key: 'REGISTER_CATEGORY' },
+  { name: 'Cadastro de Perfis', key: 'REGISTER_PROFILE' },
+  { name: 'Administração', key: 'ADMIN' },
+];
+
 export const INITIAL_PROFILES: Profile[] = [
   { id: '1', name: 'Administrador', description: 'Acesso total ao sistema' },
+  { id: '2', name: 'Operador', description: 'Acesso limitado a vendas e clientes' },
   { id: '3', name: 'Visualizador', description: 'Apenas leitura' },
 ];
 
-export const INITIAL_USERS: import('../types').User[] = [
+export const INITIAL_USERS: import('./types').User[] = [
   { id: '1', name: 'Administrador Sistema', email: 'admin@erpr.com', profileId: '1', role: 'Super Admin' },
   { id: '2', name: 'João Silva', email: 'joao.silva@erpr.com', profileId: '2', role: 'Vendas' },
   { id: '3', name: 'Maria Souza', email: 'maria.souza@erpr.com', profileId: '2', role: 'Atendimento' },

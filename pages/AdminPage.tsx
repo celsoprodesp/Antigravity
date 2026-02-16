@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { PagePermission, Profile, User } from '../../types';
+import { PagePermission, Profile, User } from '../types';
+import { supabase } from '../supabaseClient';
+import { SYSTEM_PAGES } from '../constants';
 
 interface AdminPageProps {
     permissions: PagePermission[];
@@ -9,22 +11,106 @@ interface AdminPageProps {
     onCancel: () => void;
     onNavigateRegisterProfile: () => void;
     onNavigateRegisterUser: () => void;
+    onEditProfile: (id: string) => void;
+    onEditUser: (id: string) => void;
 }
 
 const AdminPage: React.FC<AdminPageProps> = ({
     permissions, setPermissions, profiles, users,
-    onCancel, onNavigateRegisterProfile, onNavigateRegisterUser
+    onCancel, onNavigateRegisterProfile, onNavigateRegisterUser,
+    onEditProfile, onEditUser
 }) => {
     const [selectedProfileId, setSelectedProfileId] = useState(profiles[0]?.id || '1');
 
-    // Filtrar permissões pelo perfil selecionado
-    // Se não existirem permissões para este perfil (ex: novo perfil), mostra vazio ou padrão
-    const currentPermissions = permissions.filter(p => p.profileId === selectedProfileId);
+    // Listar permissões para todas as páginas do sistema
+    const currentPermissions = SYSTEM_PAGES.map(page => {
+        const existing = permissions.find(p => p.profileId === selectedProfileId && p.pageKey === page.key);
+        return existing || {
+            id: `temp-${page.key}-${selectedProfileId}`,
+            pageName: page.name,
+            pageKey: page.key,
+            canRead: false,
+            canWrite: false,
+            canDelete: false,
+            profileId: selectedProfileId
+        };
+    });
 
     const togglePermission = (id: string, field: 'canRead' | 'canWrite' | 'canDelete') => {
-        setPermissions(prev => prev.map(p =>
-            p.id === id ? { ...p, [field]: !p[field] } : p
-        ));
+        // Prevent editing Admin permissions
+        if (selectedProfileId === '1') return;
+
+        setPermissions(prev => {
+            const exists = prev.some(p => p.id === id);
+            if (exists) {
+                return prev.map(p => {
+                    if (p.id !== id) return p;
+
+                    const updated = { ...p, [field]: !p[field] };
+
+                    // Logic: If Write or Delete is ON, Read MUST be ON
+                    if ((field === 'canWrite' || field === 'canDelete') && updated[field]) {
+                        updated.canRead = true;
+                    }
+
+                    // Logic: If Read is OFF, Write and Delete MUST be OFF
+                    if (field === 'canRead' && !updated.canRead) {
+                        updated.canWrite = false;
+                        updated.canDelete = false;
+                    }
+
+                    return updated;
+                });
+            } else {
+                // If it's a virtual/temp permission, create a real record in state
+                const pageKey = id.split('-')[1];
+                const page = SYSTEM_PAGES.find(sp => sp.key === pageKey);
+
+                const newPerm = {
+                    id: Math.random().toString(36).substr(2, 9),
+                    pageName: page?.name || pageKey,
+                    pageKey: pageKey,
+                    canRead: field === 'canRead',
+                    canWrite: field === 'canWrite',
+                    canDelete: field === 'canDelete',
+                    profileId: selectedProfileId
+                };
+
+                // Apply dependencies to the new record
+                if ((field === 'canWrite' || field === 'canDelete')) {
+                    newPerm.canRead = true;
+                }
+
+                return [...prev, newPerm];
+            }
+        });
+    };
+
+    const handleSavePermissions = async () => {
+        if (selectedProfileId === '1') return; // Should not happen if button disabled
+
+        const permissionsToSave = permissions.filter(p => p.profileId === selectedProfileId);
+
+        try {
+            // Upsert all permissions for this profile
+            const { error } = await supabase
+                .from('page_permissions')
+                .upsert(permissionsToSave.map(p => ({
+                    id: p.id,
+                    page_name: p.pageName,
+                    page_key: p.pageKey,
+                    can_read: p.canRead,
+                    can_write: p.canWrite,
+                    can_delete: p.canDelete,
+                    profile_id: p.profileId
+                })));
+
+            if (error) throw error;
+            alert('Permissões salvas com sucesso!');
+        } catch (error: any) {
+            console.error('Error saving permissions:', error);
+            alert('Erro ao salvar permissões: ' + error.message);
+        }
     };
 
     return (
@@ -37,6 +123,14 @@ const AdminPage: React.FC<AdminPageProps> = ({
                 <button onClick={onCancel} className="px-6 py-2 rounded-xl text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                     Voltar
                 </button>
+                {selectedProfileId !== '1' && (
+                    <button
+                        onClick={handleSavePermissions}
+                        className="ml-3 bg-primary hover:bg-primary-dark text-white px-6 py-2 rounded-xl text-sm font-medium shadow-lg shadow-primary/20 transition-all"
+                    >
+                        Salvar Alterações
+                    </button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -57,28 +151,39 @@ const AdminPage: React.FC<AdminPageProps> = ({
 
                         <div className="mb-6">
                             <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Selecione o Perfil para Configurar</label>
-                            <select
-                                value={selectedProfileId}
-                                onChange={e => setSelectedProfileId(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                            >
-                                {profiles.map(p => (
-                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                ))}
-                            </select>
+                            <div className="flex gap-2">
+                                <select
+                                    value={selectedProfileId}
+                                    onChange={e => setSelectedProfileId(e.target.value)}
+                                    className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                >
+                                    {profiles.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </select>
+                                {selectedProfileId !== '1' && (
+                                    <button
+                                        onClick={() => onEditProfile(selectedProfileId)}
+                                        className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-400 hover:text-primary transition-all"
+                                        title="Editar Perfil"
+                                    >
+                                        <span className="material-icons-round text-lg">edit</span>
+                                    </button>
+                                )}
+                            </div>
                             <p className="mt-2 text-xs text-slate-500">
                                 {profiles.find(p => p.id === selectedProfileId)?.description}
                             </p>
                         </div>
 
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
+                            <table className="w-full text-sm text-left border-collapse">
                                 <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 font-medium border-b border-slate-200 dark:border-slate-700">
                                     <tr>
                                         <th className="px-4 py-3 rounded-tl-xl">Página / Recurso</th>
-                                        <th className="px-4 py-3 text-center w-24">Ler</th>
-                                        <th className="px-4 py-3 text-center w-24">Escrever</th>
-                                        <th className="px-4 py-3 text-center w-24 rounded-tr-xl">Excluir</th>
+                                        <th className="px-4 py-3 text-center w-32">Leitura</th>
+                                        <th className="px-4 py-3 text-center w-32">Escrita</th>
+                                        <th className="px-4 py-3 text-center w-32 rounded-tr-xl">Exclusão</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -87,28 +192,40 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                             <tr key={permission.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                                 <td className="px-4 py-3 font-medium">{permission.pageName}</td>
                                                 <td className="px-4 py-3 text-center">
-                                                    <button
-                                                        onClick={() => togglePermission(permission.id, 'canRead')}
-                                                        className={`w-10 h-6 rounded-full transition-colors relative ${permission.canRead ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-slate-700'}`}
-                                                    >
-                                                        <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${permission.canRead ? 'translate-x-4' : 'translate-x-0'}`} />
-                                                    </button>
+                                                    <div className="flex justify-center">
+                                                        <button
+                                                            onClick={() => togglePermission(permission.id, 'canRead')}
+                                                            disabled={selectedProfileId === '1'}
+                                                            className={`w-11 h-6 rounded-full transition-all duration-300 relative flex items-center shadow-inner ${permission.canRead ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'} ${selectedProfileId === '1' ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:ring-4 hover:ring-primary/10'}`}
+                                                            title={permission.canRead ? 'Ativado' : 'Desativado'}
+                                                        >
+                                                            <span className={`absolute left-1 w-4 h-4 rounded-full bg-white shadow-md transition-all duration-300 border border-slate-100 ${permission.canRead ? 'translate-x-5' : 'translate-x-0'}`} />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
-                                                    <button
-                                                        onClick={() => togglePermission(permission.id, 'canWrite')}
-                                                        className={`w-10 h-6 rounded-full transition-colors relative ${permission.canWrite ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-slate-700'}`}
-                                                    >
-                                                        <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${permission.canWrite ? 'translate-x-4' : 'translate-x-0'}`} />
-                                                    </button>
+                                                    <div className="flex justify-center">
+                                                        <button
+                                                            onClick={() => togglePermission(permission.id, 'canWrite')}
+                                                            disabled={selectedProfileId === '1'}
+                                                            className={`w-11 h-6 rounded-full transition-all duration-300 relative flex items-center shadow-inner ${permission.canWrite ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'} ${selectedProfileId === '1' ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:ring-4 hover:ring-primary/10'}`}
+                                                            title={permission.canWrite ? 'Ativado' : 'Desativado'}
+                                                        >
+                                                            <span className={`absolute left-1 w-4 h-4 rounded-full bg-white shadow-md transition-all duration-300 border border-slate-100 ${permission.canWrite ? 'translate-x-5' : 'translate-x-0'}`} />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
-                                                    <button
-                                                        onClick={() => togglePermission(permission.id, 'canDelete')}
-                                                        className={`w-10 h-6 rounded-full transition-colors relative ${permission.canDelete ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-slate-700'}`}
-                                                    >
-                                                        <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${permission.canDelete ? 'translate-x-4' : 'translate-x-0'}`} />
-                                                    </button>
+                                                    <div className="flex justify-center">
+                                                        <button
+                                                            onClick={() => togglePermission(permission.id, 'canDelete')}
+                                                            disabled={selectedProfileId === '1'}
+                                                            className={`w-11 h-6 rounded-full transition-all duration-300 relative flex items-center shadow-inner ${permission.canDelete ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'} ${selectedProfileId === '1' ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:ring-4 hover:ring-primary/10'}`}
+                                                            title={permission.canDelete ? 'Ativado' : 'Desativado'}
+                                                        >
+                                                            <span className={`absolute left-1 w-4 h-4 rounded-full bg-white shadow-md transition-all duration-300 border border-slate-100 ${permission.canDelete ? 'translate-x-5' : 'translate-x-0'}`} />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))
@@ -154,9 +271,14 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                             <p className="font-medium text-sm truncate">{user.name}</p>
                                             <p className="text-xs text-slate-500 truncate">{user.email}</p>
                                         </div>
-                                        <span className="text-[10px] font-bold px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 capitalize">
-                                            {userProfile?.name || 'Sem perfil'}
-                                        </span>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <span className="text-[10px] font-bold px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 capitalize">
+                                                {userProfile?.name || 'Sem perfil'}
+                                            </span>
+                                            <button onClick={() => onEditUser(user.id)} className="p-1 rounded hover:bg-primary/10 text-slate-400 hover:text-primary transition-all">
+                                                <span className="material-icons-round text-xs">edit</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 );
                             })}

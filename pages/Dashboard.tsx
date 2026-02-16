@@ -1,6 +1,6 @@
-
 import React from 'react';
-import { Order, OrderStatus } from '../../types';
+import { Order, OrderStatus } from '../types';
+import { supabase } from '../supabaseClient';
 
 interface DashboardProps {
   orders: Order[];
@@ -16,12 +16,24 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, setOrders, onNewOrder }) 
     { title: 'Concluído', status: 'CONCLUIDO', color: 'emerald' },
   ];
 
-  const updateStatus = (id: string, newStatus: OrderStatus) => {
+  const updateStatus = async (id: string, newStatus: OrderStatus) => {
+    // Update local state for immediate feedback
     setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
+
+    // Update Supabase
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: newStatus })
+      .eq('id', id);
+
+    if (error) {
+      alert('Erro ao atualizar status: ' + error.message);
+      // Optional: rollback local state on error
+    }
   };
 
   return (
-    <div className="space-y-8 h-full flex flex-col">
+    <div className="space-y-8 min-h-full flex flex-col">
       <div className="flex justify-between items-end">
         <div>
           <h2 className="text-2xl font-bold">Fluxo de Pedidos</h2>
@@ -82,7 +94,7 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, setOrders, onNewOrder }) 
       </div>
 
       {/* Kanban columns com barra de rolagem horizontal */}
-      <div className="flex-1 overflow-x-auto pb-4" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent' }}>
+      <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
         <div className="flex gap-6 min-w-max h-full">
           {columns.map(col => (
             <div key={col.status} className="min-w-[320px] w-[320px] flex flex-col h-full">

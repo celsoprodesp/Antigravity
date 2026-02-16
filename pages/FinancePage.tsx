@@ -1,24 +1,18 @@
 import React, { useState } from 'react';
-import { Transaction } from '../../types';
+import { Transaction } from '../types';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { GoogleGenAI } from "@google/genai";
+import { supabase } from '../supabaseClient';
 
-const DATA = [
-  { name: '01 Out', receita: 4000, despesa: 2400 },
-  { name: '05 Out', receita: 7000, despesa: 3000 },
-  { name: '10 Out', receita: 12000, despesa: 4500 },
-  { name: '15 Out', receita: 15000, despesa: 5000 },
-  { name: '20 Out', receita: 22000, despesa: 7000 },
-  { name: '25 Out', receita: 38000, despesa: 8500 },
-  { name: '30 Out', receita: 48250, despesa: 12840 },
-];
+// DATA removed in favor of dynamic calculation
 
 interface FinancePageProps {
   transactions: Transaction[];
-  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
+  transactionCategories: any[];
+  onSave: () => void;
 }
 
-const FinancePage: React.FC<FinancePageProps> = ({ transactions, setTransactions }) => {
+const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCategories, onSave }) => {
   const [aiInsights, setAiInsights] = useState<string | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
   const [showNewModal, setShowNewModal] = useState(false);
@@ -32,8 +26,10 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, setTransactions
   const [newCategory, setNewCategory] = useState('');
   const [newAmount, setNewAmount] = useState(0);
   const [newType, setNewType] = useState<'RECEITA' | 'DESPESA'>('RECEITA');
+  const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
 
-  const categories = [...new Set(transactions.map(t => t.category))];
 
   const filteredTransactions = transactions.filter(t => {
     if (appliedFilters.category && t.category !== appliedFilters.category) return false;
@@ -101,6 +97,29 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, setTransactions
     return true;
   });
 
+  // Agrupar transações por data para o gráfico
+  const chartData = React.useMemo(() => {
+    const dataMap = new Map<string, { name: string, receita: number, despesa: number }>();
+
+    // Ordenar transações por data (assumindo formato string simples por enquanto, ideal seria converter para Date)
+    const sorted = [...filteredTransactions].reverse(); // Assumindo que vêm do mais novo para o mais antigo
+
+    sorted.forEach(t => {
+      const dateKey = t.date.split(',')[0]; // Pega só a data DD/MM
+      if (!dataMap.has(dateKey)) {
+        dataMap.set(dateKey, { name: dateKey, receita: 0, despesa: 0 });
+      }
+      const entry = dataMap.get(dateKey)!;
+      if (t.type === 'RECEITA') {
+        entry.receita += t.amount;
+      } else {
+        entry.despesa += t.amount;
+      }
+    });
+
+    return Array.from(dataMap.values());
+  }, [filteredTransactions]);
+
   const handleSearch = () => {
     setAppliedFilters({ category: filterCategory, dateFrom: filterDateFrom, dateTo: filterDateTo });
   };
@@ -118,12 +137,10 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, setTransactions
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: `Analise estes dados financeiros do ERP e forneça 3 insights estratégicos curtos em português:
-        Receita Total: R$ 48.250,00
-        Despesa Total: R$ 12.840,00
-        Últimas transações: ${JSON.stringify(transactions)}`,
+        contents: `Analise estes dados exclusivamente da tabela de lançamentos do ERP e forneça 3 insights estratégicos curtos em português:
+        Dados: ${JSON.stringify(transactions)}`,
         config: {
-          systemInstruction: "Você é um Analista de BI especialista em finanças para pequenas e médias empresas."
+          systemInstruction: "Você é um Analista Financeiro especialista. Sua análise deve se basear APENAS nos dados fornecidos da tabela de lançamentos."
         }
       });
       setAiInsights(response.text || "Sem insights no momento.");
@@ -135,25 +152,52 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, setTransactions
     }
   };
 
-  const handleAddTransaction = () => {
+  const handleAddTransaction = async () => {
     if (!newDesc || !newCategory || newAmount <= 0) return alert('Preencha todos os campos');
-    const now = new Date();
-    const dateStr = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}, ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
-    const newTransaction: Transaction = {
-      id: Math.random().toString(36).substr(2, 9),
-      date: dateStr,
+
+    const trData = {
       description: newDesc,
       category: newCategory,
-      status: 'PENDENTE',
+      status: 'CONFIRMADO',
       amount: newAmount,
       type: newType,
+      date: newDate
     };
-    setTransactions(prev => [newTransaction, ...prev]);
+
+    const { error } = await supabase.from('transactions').insert({
+      id: Math.random().toString(36).substr(2, 9),
+      ...trData
+    });
+
+    if (error) {
+      alert('Erro ao salvar lançamento: ' + error.message);
+      return;
+    }
+
+    onSave();
     setNewDesc('');
     setNewCategory('');
     setNewAmount(0);
     setNewType('RECEITA');
+    setNewDate(new Date().toISOString().split('T')[0]);
     setShowNewModal(false);
+  };
+
+  const handleAddCategory = async () => {
+    if (!newCatName) return;
+    const { error } = await supabase.from('transaction_categories').insert({
+      id: Math.random().toString(36).substr(2, 9),
+      name: newCatName
+    });
+    if (error) return alert(error.message);
+    setNewCatName('');
+    onSave();
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    const { error } = await supabase.from('transaction_categories').delete().eq('id', id);
+    if (error) return alert(error.message);
+    onSave();
   };
 
   return (
@@ -226,17 +270,34 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, setTransactions
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Categoria</label>
-                <input
-                  value={newCategory} onChange={e => setNewCategory(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  placeholder="Ex: Vendas, Infraestrutura..."
-                  list="categories-list"
-                />
-                <datalist id="categories-list">
-                  {categories.map(cat => <option key={cat} value={cat} />)}
-                </datalist>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Categoria</label>
+                  <div className="flex gap-2">
+                    <select
+                      value={newCategory} onChange={e => setNewCategory(e.target.value)}
+                      className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    >
+                      <option value="">Selecione...</option>
+                      {transactionCategories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
+                    </select>
+                    <button
+                      onClick={() => setShowCategoryModal(true)}
+                      className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-primary hover:bg-primary/10 transition-all"
+                      title="Gerenciar Categorias"
+                    >
+                      <span className="material-icons-round text-base">settings</span>
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Data</label>
+                  <input
+                    type="date"
+                    value={newDate} onChange={e => setNewDate(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
               </div>
             </div>
 
@@ -266,18 +327,18 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, setTransactions
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <p className="text-sm text-slate-500 mb-1">Receita Total</p>
-          <h3 className="text-2xl font-bold">R$ 48.250,00</h3>
-          <span className="text-xs text-green-500 font-medium">+12.5% vs mês anterior</span>
+          <h3 className="text-2xl font-bold">R$ {transactions.filter(t => t.type === 'RECEITA').reduce((acc, t) => acc + t.amount, 0).toLocaleString('pt-BR')}</h3>
+          <span className="text-xs text-green-500 font-medium">Lançamentos confirmados</span>
         </div>
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <p className="text-sm text-slate-500 mb-1">Despesas Totais</p>
-          <h3 className="text-2xl font-bold">R$ 12.840,00</h3>
-          <span className="text-xs text-red-500 font-medium">+3.2% vs mês anterior</span>
+          <h3 className="text-2xl font-bold">R$ {transactions.filter(t => t.type === 'DESPESA').reduce((acc, t) => acc + t.amount, 0).toLocaleString('pt-BR')}</h3>
+          <span className="text-xs text-red-500 font-medium">Saídas registradas</span>
         </div>
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <p className="text-sm text-slate-500 mb-1">Saldo Líquido</p>
-          <h3 className="text-2xl font-bold text-emerald-500">R$ 35.410,00</h3>
-          <span className="text-xs text-slate-400">Margem de lucro de 73%</span>
+          <h3 className="text-2xl font-bold text-emerald-500">R$ {(transactions.filter(t => t.type === 'RECEITA').reduce((acc, t) => acc + t.amount, 0) - transactions.filter(t => t.type === 'DESPESA').reduce((acc, t) => acc + t.amount, 0)).toLocaleString('pt-BR')}</h3>
+          <span className="text-xs text-slate-400">Diferença entre entradas e saídas</span>
         </div>
       </div>
 
@@ -285,7 +346,7 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, setTransactions
         <h3 className="text-lg font-bold mb-6">Evolução da Receita</h3>
         <div className="h-80 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={DATA}>
+            <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="colorRec" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#137fec" stopOpacity={0.1} />
@@ -330,7 +391,7 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, setTransactions
                 className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
                 <option value="">Todas Categorias</option>
-                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                {transactionCategories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
               </select>
               <button
                 onClick={handleSearch}
@@ -377,6 +438,47 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, setTransactions
           </table>
         </div>
       </div>
+      {/* Modal Gestão de Categorias */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] animate-fadeIn" onClick={() => setShowCategoryModal(false)}>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-md p-6 space-y-6 mx-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold">Categorias de Lançamentos</h3>
+              <button onClick={() => setShowCategoryModal(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                <span className="material-icons-round">close</span>
+              </button>
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                value={newCatName} onChange={e => setNewCatName(e.target.value)}
+                placeholder="Nova categoria..."
+                className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm"
+              />
+              <button
+                onClick={handleAddCategory}
+                className="bg-primary text-white p-2 rounded-xl"
+              >
+                <span className="material-icons-round">add</span>
+              </button>
+            </div>
+
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
+              {transactionCategories.map(cat => (
+                <div key={cat.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                  <span className="text-sm font-medium">{cat.name}</span>
+                  <button onClick={() => handleDeleteCategory(cat.id)} className="text-slate-400 hover:text-red-500 transition-colors">
+                    <span className="material-icons-round text-sm">delete</span>
+                  </button>
+                </div>
+              ))}
+              {transactionCategories.length === 0 && (
+                <p className="text-center text-sm text-slate-500 py-4">Nenhuma categoria cadastrada</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,5 +1,7 @@
+
 import React, { useState } from 'react';
-import { Client, Order, OrderStatus, Item, OrderItem } from '../../types';
+import { Client, Order, OrderStatus, Item, OrderItem } from '../types';
+import { supabase } from '../supabaseClient';
 
 interface NewOrderPageProps {
   clients: Client[];
@@ -8,9 +10,13 @@ interface NewOrderPageProps {
   onSave: (order: Order) => void;
   onNavigateNewClient: () => void;
   onNavigateNewItem: () => void;
+  onEditClient: (id: string) => void;
 }
 
-const NewOrderPage: React.FC<NewOrderPageProps> = ({ clients, items, onCancel, onSave, onNavigateNewClient, onNavigateNewItem }) => {
+const NewOrderPage: React.FC<NewOrderPageProps> = ({
+  clients, items, onCancel, onSave,
+  onNavigateNewClient, onNavigateNewItem, onEditClient
+}) => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [status, setStatus] = useState<OrderStatus>('PENDENTE');
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -46,12 +52,16 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({ clients, items, onCancel, o
 
   const totalAmount = orderItems.reduce((acc, oi) => acc + oi.total, 0);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selectedClient) return alert('Selecione um cliente');
     if (orderItems.length === 0) return alert('Adicione pelo menos um item');
+
+    const orderId = Math.random().toString(36).substr(2, 9);
+    const orderNumber = `#ORD-${Math.floor(Math.random() * 10000)}`;
+
     const newOrder: Order = {
-      id: Math.random().toString(36).substr(2, 9),
-      orderNumber: `#ORD-${Math.floor(Math.random() * 10000)}`,
+      id: orderId,
+      orderNumber: orderNumber,
       clientName: selectedClient.name,
       description: orderItems.map(oi => `${oi.quantity}x ${oi.itemName}`).join(', '),
       status,
@@ -61,11 +71,47 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({ clients, items, onCancel, o
       clientInitials: selectedClient.initials,
       items: orderItems,
     };
+
+    // 1. Salvar o pedido (Order)
+    const { error: orderError } = await supabase.from('orders').insert({
+      id: newOrder.id,
+      order_number: newOrder.orderNumber,
+      client_name: newOrder.clientName,
+      description: newOrder.description,
+      status: newOrder.status,
+      amount: newOrder.amount,
+      time_ago: newOrder.timeAgo,
+      client_avatar: newOrder.clientAvatar,
+      client_initials: newOrder.clientInitials
+    });
+
+    if (orderError) {
+      alert('Erro ao salvar pedido: ' + orderError.message);
+      return;
+    }
+
+    // 2. Salvar os itens do pedido (OrderItems)
+    const dbItems = orderItems.map(oi => ({
+      id: Math.random().toString(36).substr(2, 9),
+      order_id: orderId,
+      item_name: oi.itemName,
+      quantity: oi.quantity,
+      unit_price: oi.unitPrice,
+      total: oi.total.toString() // assuming total is a string in OrderItem based on previous code or just good to keep consistent
+    }));
+
+    const { error: itemsError } = await supabase.from('order_items').insert(dbItems);
+
+    if (itemsError) {
+      console.error('Erro ao salvar itens do pedido:', itemsError);
+      alert('Pedido salvo, mas erro ao registrar os itens: ' + itemsError.message);
+    }
+
     onSave(newOrder);
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 animate-fadeIn">
+    <div className="max-w-5xl mx-auto space-y-8 animate-fadeIn h-full overflow-y-auto pb-20">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">Novo Pedido</h2>
@@ -84,12 +130,23 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({ clients, items, onCancel, o
             <h3 className="font-bold flex items-center gap-2">
               <span className="material-icons-outlined text-primary">person</span> Dados do Cliente
             </h3>
-            <button
-              onClick={onNavigateNewClient}
-              className="text-primary hover:text-primary-dark text-sm font-medium flex items-center gap-1 transition-colors whitespace-nowrap"
-            >
-              <span className="material-icons-round text-base">add_circle</span> Novo Cliente
-            </button>
+            <div className="flex gap-2">
+              {selectedClient && (
+                <button
+                  onClick={() => onEditClient(selectedClient.id)}
+                  className="text-slate-400 hover:text-primary transition-colors flex items-center gap-1 text-sm font-medium"
+                  title="Editar cliente selecionado"
+                >
+                  <span className="material-icons-round text-base">edit</span> Editar
+                </button>
+              )}
+              <button
+                onClick={onNavigateNewClient}
+                className="text-primary hover:text-primary-dark text-sm font-medium flex items-center gap-1 transition-colors whitespace-nowrap"
+              >
+                <span className="material-icons-round text-base">add_circle</span> Novo Cliente
+              </button>
+            </div>
           </div>
 
           <div>

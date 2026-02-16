@@ -17,9 +17,13 @@ const TopBar: React.FC<TopBarProps> = ({ onSearch, onSignOut }) => {
         <div className="relative hidden md:block group">
           <span className="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">search</span>
           <input
-            onChange={(e) => onSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                onSearch(e.currentTarget.value);
+              }
+            }}
             className="pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-64 transition-all shadow-sm"
-            placeholder="Buscar..."
+            placeholder="Buscar páginas (Enter)..."
             type="text"
           />
         </div>

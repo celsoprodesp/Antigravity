@@ -1,27 +1,79 @@
 
-import React, { useState } from 'react';
-import { ItemCategory } from '../../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { ItemCategory } from '../types';
+import { supabase } from '../supabaseClient';
 
 interface RegisterCategoryPageProps {
     categories: ItemCategory[];
+    editingCategory?: ItemCategory;
     onSave: (category: ItemCategory) => void;
     onCancel: () => void;
+    onEditCategory: (id: string) => void;
 }
 
-const RegisterCategoryPage: React.FC<RegisterCategoryPageProps> = ({ categories, onSave, onCancel }) => {
-    const [name, setName] = useState('');
-    const [description, setDescription] = useState('');
+const RegisterCategoryPage: React.FC<RegisterCategoryPageProps> = ({ categories, editingCategory, onSave, onCancel, onEditCategory }) => {
+    const [name, setName] = useState(editingCategory?.name || '');
+    const [description, setDescription] = useState(editingCategory?.description || '');
+    const nameInputRef = useRef<HTMLInputElement>(null);
 
-    const handleSave = () => {
+    useEffect(() => {
+        if (editingCategory) {
+            setName(editingCategory.name);
+            setDescription(editingCategory.description);
+
+            setTimeout(() => {
+                if (nameInputRef.current) nameInputRef.current.focus();
+            }, 0);
+        } else {
+            setName('');
+            setDescription('');
+        }
+    }, [editingCategory]);
+
+    const handleSave = async () => {
         if (!name) return alert('Preencha o nome da categoria');
-        const newCategory: ItemCategory = {
-            id: Math.random().toString(36).substr(2, 9),
+
+        const categoryData = {
             name,
             description,
         };
-        onSave(newCategory);
-        setName('');
-        setDescription('');
+
+        if (editingCategory) {
+            const { error } = await supabase
+                .from('item_categories')
+                .update(categoryData)
+                .eq('id', editingCategory.id);
+
+            if (error) {
+                alert('Erro ao atualizar categoria: ' + error.message);
+                return;
+            }
+            onSave({ ...editingCategory, ...categoryData });
+        } else {
+            const newCategory: ItemCategory = {
+                id: Math.random().toString(36).substr(2, 9),
+                ...categoryData,
+            };
+
+            const { error } = await supabase.from('item_categories').insert(newCategory);
+
+            if (error) {
+                alert('Erro ao salvar categoria: ' + error.message);
+                return;
+            }
+            onSave(newCategory);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Deseja realmente excluir esta categoria? Atenção: isso poderá afetar itens vinculados.')) return;
+
+        const { error } = await supabase.from('item_categories').delete().eq('id', id);
+        if (error) {
+            alert('Erro ao excluir categoria: ' + error.message);
+            return;
+        }
+        onSave({ id, name: '', description: '' }); // Trigger refresh
     };
 
     return (
@@ -43,8 +95,8 @@ const RegisterCategoryPage: React.FC<RegisterCategoryPageProps> = ({ categories,
                         <span className="material-icons-round text-white text-3xl">category</span>
                     </div>
                     <div>
-                        <h3 className="font-bold text-lg">Nova Categoria</h3>
-                        <p className="text-sm text-slate-500">Crie categorias para organizar seus itens</p>
+                        <h3 className="font-bold text-lg">{editingCategory ? 'Editar Categoria' : 'Nova Categoria'}</h3>
+                        <p className="text-sm text-slate-500">{editingCategory ? 'Atualize os dados da categoria' : 'Crie categorias para organizar seus itens'}</p>
                     </div>
                 </div>
 
@@ -52,6 +104,7 @@ const RegisterCategoryPage: React.FC<RegisterCategoryPageProps> = ({ categories,
                     <div>
                         <label className="block text-sm font-medium mb-2">Nome da Categoria *</label>
                         <input
+                            ref={nameInputRef}
                             value={name} onChange={e => setName(e.target.value)}
                             className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                             placeholder="Ex: Eletrônicos"
@@ -86,6 +139,14 @@ const RegisterCategoryPage: React.FC<RegisterCategoryPageProps> = ({ categories,
                                     <h4 className="font-semibold group-hover:text-primary transition-colors">{cat.name}</h4>
                                     <p className="text-xs text-slate-500 mt-1">{cat.description || 'Sem descrição'}</p>
                                 </div>
+                            </div>
+                            <div className="mt-4 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => onEditCategory(cat.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-all">
+                                    <span className="material-icons-round text-sm">edit</span>
+                                </button>
+                                <button onClick={() => handleDelete(cat.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
+                                    <span className="material-icons-round text-sm">delete</span>
+                                </button>
                             </div>
                         </div>
                     ))}
