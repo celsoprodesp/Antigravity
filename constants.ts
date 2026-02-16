@@ -183,6 +183,7 @@ export const SYSTEM_PAGES = [
   { name: 'Cadastro de Usuários', key: 'REGISTER_USER' },
   { name: 'Configurações', key: 'SETTINGS' },
   { name: 'Administração', key: 'ADMIN' },
+  { name: 'Meu Perfil', key: 'EDIT_MY_PROFILE' },
 ];
 
 export const INITIAL_PROFILES: Profile[] = [

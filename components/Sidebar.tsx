@@ -8,7 +8,7 @@ interface SidebarProps {
   isExpanded: boolean;
   setIsExpanded: (expanded: boolean) => void;
   user: { id: string; name: string; email: string; avatar?: string } | null;
-  onEditCurrentUser: (id: string) => void;
+  onEditCurrentUser: () => void;
   checkPermission: (view: ViewType) => { canRead: boolean; canWrite: boolean };
 }
 
@@ -71,7 +71,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isExpanded, 
 
       <div className={`mt-auto w-full ${isExpanded ? 'px-4' : 'flex justify-center'}`}>
         <div
-          onClick={() => user?.id && onEditCurrentUser(user.id)}
+          onClick={() => onEditCurrentUser()}
           className={`flex items-center gap-3 p-2 rounded-xl border border-transparent cursor-pointer ${isExpanded ? 'hover:bg-slate-50 dark:hover:bg-slate-800/50' : 'hover:scale-110'} transition-all`}
         >
           <button className="w-10 h-10 rounded-full overflow-hidden border-2 border-white dark:border-slate-700 shadow-sm hover:border-primary transition-colors duration-200 shrink-0 relative bg-slate-200 dark:bg-slate-700">

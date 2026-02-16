@@ -15,6 +15,7 @@ import RegisterCategoryPage from './pages/RegisterCategoryPage';
 import AdminPage from './pages/AdminPage';
 import RegisterProfilePage from './pages/RegisterProfilePage';
 import RegisterUserPage from './pages/RegisterUserPage';
+import EditMyProfilePage from './pages/EditMyProfilePage';
 import LoginPage from './pages/LoginPage';
 import { supabase } from './supabaseClient';
 import { Session } from '@supabase/supabase-js';
@@ -372,6 +373,16 @@ const App: React.FC = () => {
           onCancel={goBack}
           permission={getPagePermission('ADMIN')}
         />;
+      case 'EDIT_MY_PROFILE':
+        return <EditMyProfilePage
+          currentUser={currentUser}
+          onSave={() => {
+            refreshData();
+            goBack();
+          }}
+          onCancel={goBack}
+          permission={getPagePermission('EDIT_MY_PROFILE')}
+        />;
       default:
         return <Dashboard orders={orders} setOrders={setOrders} onNewOrder={() => handleNavigate('NEW_ORDER')} />;
     }
@@ -389,7 +400,7 @@ const App: React.FC = () => {
         isExpanded={isSidebarExpanded}
         setIsExpanded={setIsSidebarExpanded}
         user={currentUser}
-        onEditCurrentUser={(id) => handleNavigate('REGISTER_USER', id)}
+        onEditCurrentUser={() => handleNavigate('EDIT_MY_PROFILE')}
         checkPermission={getPagePermission}
       />
       <main className="flex-1 flex flex-col overflow-hidden">
