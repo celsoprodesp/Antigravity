@@ -19,15 +19,15 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onSelectClient, onNe
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Gestão de Clientes</h2>
+          <h2 className="text-xl md:text-2xl font-bold">Gestão de Clientes</h2>
           <p className="text-sm text-slate-500">Relacionamento e retenção</p>
         </div>
         {permission.canWrite && (
           <button
             onClick={onNewClient}
-            className="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
+            className="w-full sm:w-auto bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
           >
             <span className="material-icons-round text-lg">person_add</span> Novo Cliente
           </button>
@@ -53,9 +53,9 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onSelectClient, onNe
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-xs uppercase font-semibold tracking-wide">
                 <th className="px-6 py-4">Cliente / Empresa</th>
-                <th className="px-6 py-4">Contato</th>
-                <th className="px-6 py-4 text-center">Última Compra</th>
-                <th className="px-6 py-4">Inatividade</th>
+                <th className="px-6 py-4 hidden sm:table-cell">Contato</th>
+                <th className="px-6 py-4 text-center hidden md:table-cell">Última Compra</th>
+                <th className="px-6 py-4">Status / Inatividade</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
@@ -74,13 +74,13 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onSelectClient, onNe
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 hidden sm:table-cell">
                     <div className="flex flex-col">
                       <span className="text-slate-900 dark:text-white">{client.email}</span>
                       <span className="text-xs text-slate-500">{client.phone}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-center text-slate-500">{client.lastPurchase}</td>
+                  <td className="px-6 py-4 text-center text-slate-500 hidden md:table-cell">{client.lastPurchase}</td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${client.inactivityDays > 30
                       ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'

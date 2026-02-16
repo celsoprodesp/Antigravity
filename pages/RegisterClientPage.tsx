@@ -103,14 +103,14 @@ const RegisterClientPage: React.FC<RegisterClientPageProps> = ({ editingClient, 
 
     return (
         <div className="max-w-2xl mx-auto space-y-8 animate-fadeIn">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold">{editingClient ? 'Editar Cliente' : 'Cadastrar Cliente'}</h2>
+                    <h2 className="text-xl md:text-2xl font-bold">{editingClient ? 'Editar Cliente' : 'Cadastrar Cliente'}</h2>
                     <p className="text-sm text-slate-500">{editingClient ? 'Atualize os dados do cliente' : 'Preencha os dados do novo cliente'}</p>
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+            <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
                 <div className="flex items-center gap-4 mb-2">
                     <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-primary/20">
                         <span className="material-icons-round text-white text-3xl">person_add</span>
@@ -178,13 +178,13 @@ const RegisterClientPage: React.FC<RegisterClientPageProps> = ({ editingClient, 
                     </div>
                 </div>
 
-                <div className="flex gap-3 pt-4">
-                    <button type="button" onClick={onCancel} className="flex-1 px-6 py-3 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Voltar</button>
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                    <button type="button" onClick={onCancel} className="w-full sm:flex-1 px-6 py-3 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors order-3 sm:order-1">Voltar</button>
                     {editingClient && permission.canDelete && (
-                        <button type="button" onClick={handleDelete} className="flex-1 px-6 py-3 rounded-xl text-sm font-medium text-red-500 border border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">Excluir</button>
+                        <button type="button" onClick={handleDelete} className="w-full sm:flex-1 px-6 py-3 rounded-xl text-sm font-medium text-red-500 border border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors order-2">Excluir</button>
                     )}
                     {permission.canWrite && (
-                        <button type="button" onClick={handleSave} className="flex-[2] bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all">Salvar Cliente</button>
+                        <button type="button" onClick={handleSave} className="w-full sm:flex-[2] bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all order-1 sm:order-2">Salvar Cliente</button>
                     )}
                 </div>
             </div>

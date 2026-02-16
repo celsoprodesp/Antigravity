@@ -4,7 +4,7 @@ import { ViewType } from '../types';
 
 interface SidebarProps {
   currentView: ViewType;
-  onNavigate: (view: ViewType) => void;
+  onNavigate: (view: ViewType, id?: string) => void;
   isExpanded: boolean;
   setIsExpanded: (expanded: boolean) => void;
   user: { id: string; name: string; email: string; avatar?: string } | null;
@@ -29,10 +29,18 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isExpanded, 
   });
 
   return (
-    <aside className={`${isExpanded ? 'w-80' : 'w-20'} bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col items-center py-6 h-full z-20 shadow-sm shrink-0 transition-all duration-300 ease-in-out relative`}>
+    <aside className={`${isExpanded ? 'w-80' : 'w-20'} h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col items-center py-6 z-20 shadow-sm shrink-0 transition-all duration-300 ease-in-out relative`}>
+      {/* Close button for mobile */}
+      <button
+        onClick={() => onNavigate('DASHBOARD')} // This is just to trigger the closing logic in App.tsx if needed, or we can add a specific onClose
+        className="md:hidden absolute top-4 right-4 text-slate-400 hover:text-primary transition-colors"
+      >
+        <span className="material-icons-round">close</span>
+      </button>
+
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="absolute -right-3 top-20 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full p-1 shadow-md z-30 text-slate-400 hover:text-primary transition-colors"
+        className="absolute -right-3 top-20 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full p-1 shadow-md z-30 text-slate-400 hover:text-primary transition-colors hidden md:block"
       >
         <span className="material-icons-round text-sm">{isExpanded ? 'chevron_left' : 'chevron_right'}</span>
       </button>

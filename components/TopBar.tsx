@@ -4,13 +4,20 @@ import React from 'react';
 interface TopBarProps {
   onSearch: (query: string) => void;
   onSignOut: () => void;
+  toggleMobileMenu: () => void;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ onSearch, onSignOut }) => {
+const TopBar: React.FC<TopBarProps> = ({ onSearch, onSignOut, toggleMobileMenu }) => {
   return (
-    <header className="h-20 px-8 flex items-center justify-between shrink-0 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md z-10 border-b border-slate-100 dark:border-slate-800">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">ERP Minimalista</h1>
+    <header className="h-20 px-4 md:px-8 flex items-center justify-between shrink-0 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md z-10 border-b border-slate-100 dark:border-slate-800">
+      <div className="flex items-center gap-4">
+        <button
+          onClick={toggleMobileMenu}
+          className="md:hidden w-10 h-10 flex items-center justify-center rounded-xl text-slate-500 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+        >
+          <span className="material-icons-round">menu</span>
+        </button>
+        <h1 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white tracking-tight truncate">ERP Minimalista</h1>
       </div>
 
       <div className="flex items-center gap-4">
@@ -35,8 +42,8 @@ const TopBar: React.FC<TopBarProps> = ({ onSearch, onSignOut }) => {
 
         <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
 
-        <button onClick={onSignOut} className="text-sm text-slate-500 hover:text-red-500 transition-colors flex items-center gap-1 font-medium">
-          <span className="material-icons-outlined text-base">logout</span> Sair
+        <button onClick={onSignOut} className="text-sm text-slate-500 hover:text-red-500 transition-colors flex items-center gap-1 font-medium whitespace-nowrap">
+          <span className="material-icons-outlined text-base">logout</span> <span className="hidden sm:inline">Sair</span>
         </button>
       </div>
     </header>

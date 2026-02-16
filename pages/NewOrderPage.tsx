@@ -116,9 +116,9 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-fadeIn h-full overflow-y-auto pb-20">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Novo Pedido</h2>
+          <h2 className="text-xl md:text-2xl font-bold">Novo Pedido</h2>
           <p className="text-sm text-slate-500">Preencha os dados da venda</p>
         </div>
       </div>
@@ -126,11 +126,11 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Dados do Cliente */}
         <section className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <h3 className="font-bold flex items-center gap-2">
               <span className="material-icons-outlined text-primary">person</span> Dados do Cliente
             </h3>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-3">
               {selectedClient && (
                 <button
                   onClick={() => onEditClient(selectedClient.id)}
@@ -204,7 +204,7 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
 
         {/* Itens do Pedido */}
         <section className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <h3 className="font-bold flex items-center gap-2">
               <span className="material-icons-outlined text-primary">shopping_cart</span> Itens do Pedido
             </h3>
@@ -217,88 +217,89 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
           </div>
 
           {/* Adicionar Item */}
-          <div className="flex gap-2 items-end">
-            <div className="flex-1">
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="flex-1 min-w-[200px]">
               <label className="block text-xs font-medium mb-1 text-slate-500">Item</label>
               <select
                 value={selectedItemId}
                 onChange={(e) => setSelectedItemId(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
                 <option value="">Selecione um item...</option>
                 {items.map(i => <option key={i.id} value={i.id}>{i.name} - R$ {i.unitPrice.toLocaleString('pt-BR')}</option>)}
               </select>
             </div>
-            <div className="w-20">
+            <div className="w-24">
               <label className="block text-xs font-medium mb-1 text-slate-500">Qtd</label>
               <input
                 type="number" min="1" value={quantity}
                 onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
             <button
               onClick={addItem}
               disabled={!selectedItemId}
-              className="bg-primary hover:bg-primary-dark disabled:opacity-40 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm"
+              className="bg-primary hover:bg-primary-dark disabled:opacity-40 text-white p-2.5 rounded-xl text-sm font-medium transition-all shadow-sm flex items-center justify-center shrink-0"
             >
-              <span className="material-icons-round text-base">add</span>
+              <span className="material-icons-round">add</span>
             </button>
           </div>
 
-          {/* Tabela de Itens */}
-          {orderItems.length > 0 ? (
-            <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-800/50 text-xs text-slate-500 uppercase tracking-wider">
-                    <th className="text-left px-4 py-3">Item</th>
-                    <th className="text-center px-2 py-3">Qtd</th>
-                    <th className="text-right px-3 py-3">Unit.</th>
-                    <th className="text-right px-3 py-3">Total</th>
-                    <th className="text-center px-2 py-3 w-10"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {orderItems.map(oi => (
-                    <tr key={oi.itemId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                      <td className="px-4 py-3 font-medium truncate max-w-[160px]">{oi.itemName}</td>
-                      <td className="px-2 py-3 text-center text-slate-600 dark:text-slate-400">{oi.quantity}</td>
-                      <td className="px-3 py-3 text-right text-slate-500">R$ {oi.unitPrice.toLocaleString('pt-BR')}</td>
-                      <td className="px-3 py-3 text-right font-semibold">R$ {oi.total.toLocaleString('pt-BR')}</td>
-                      <td className="px-2 py-3 text-center">
-                        <button onClick={() => removeItem(oi.itemId)} className="text-red-400 hover:text-red-600 transition-colors">
-                          <span className="material-icons-round text-base">close</span>
-                        </button>
-                      </td>
+          <div className="overflow-x-auto">
+            {orderItems.length > 0 ? (
+              <div className="min-w-[500px] overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-800/50 text-xs text-slate-500 uppercase tracking-wider">
+                      <th className="text-left px-4 py-3">Item</th>
+                      <th className="text-center px-2 py-3">Qtd</th>
+                      <th className="text-right px-3 py-3">Unit.</th>
+                      <th className="text-right px-3 py-3">Total</th>
+                      <th className="text-center px-2 py-3 w-10"></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-3 flex justify-between items-center border-t border-slate-200 dark:border-slate-700">
-                <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Total do Pedido</span>
-                <span className="text-lg font-bold text-primary">R$ {totalAmount.toLocaleString('pt-BR')}</span>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {orderItems.map(oi => (
+                      <tr key={oi.itemId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                        <td className="px-4 py-3 font-medium truncate max-w-[160px]">{oi.itemName}</td>
+                        <td className="px-2 py-3 text-center text-slate-600 dark:text-slate-400">{oi.quantity}</td>
+                        <td className="px-3 py-3 text-right text-slate-500">R$ {oi.unitPrice.toLocaleString('pt-BR')}</td>
+                        <td className="px-3 py-3 text-right font-semibold">R$ {oi.total.toLocaleString('pt-BR')}</td>
+                        <td className="px-2 py-3 text-center">
+                          <button onClick={() => removeItem(oi.itemId)} className="text-red-400 hover:text-red-600 transition-colors">
+                            <span className="material-icons-round text-base">close</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-3 flex justify-between items-center border-t border-slate-200 dark:border-slate-700">
+                  <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Total do Pedido</span>
+                  <span className="text-lg font-bold text-primary">R$ {totalAmount.toLocaleString('pt-BR')}</span>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-slate-400">
-              <span className="material-icons-outlined text-4xl mb-2 block">inventory_2</span>
-              <p className="text-sm">Nenhum item adicionado</p>
-              <p className="text-xs mt-1">Use o seletor acima para adicionar itens ao pedido</p>
-            </div>
-          )}
+            ) : (
+              <div className="text-center py-8 text-slate-400">
+                <span className="material-icons-outlined text-4xl mb-2 block">inventory_2</span>
+                <p className="text-sm">Nenhum item adicionado</p>
+                <p className="text-xs mt-1">Use o seletor acima para adicionar itens ao pedido</p>
+              </div>
+            )}
+          </div>
         </section>
       </div>
 
-      <div className="flex gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
-        <button onClick={onCancel} className="flex-1 px-8 py-4 rounded-xl font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Cancelar Pedido</button>
+      <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+        <button onClick={onCancel} className="w-full sm:flex-1 px-8 py-4 rounded-xl font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Cancelar Pedido</button>
         {permission.canWrite ? (
-          <button onClick={handleSave} className="flex-[2] bg-primary hover:bg-primary-dark text-white px-10 py-4 rounded-xl font-bold shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-2">
+          <button onClick={handleSave} className="w-full sm:flex-[2] bg-primary hover:bg-primary-dark text-white px-10 py-4 rounded-xl font-bold shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-2">
             <span className="material-icons-round">check_circle</span>
             Finalizar e Salvar Pedido
           </button>
         ) : (
-          <button disabled className="flex-[2] bg-slate-200 text-slate-500 px-10 py-4 rounded-xl font-bold cursor-not-allowed flex items-center justify-center gap-2">
+          <button disabled className="w-full sm:flex-[2] bg-slate-200 text-slate-500 px-10 py-4 rounded-xl font-bold cursor-not-allowed flex items-center justify-center gap-2">
             <span className="material-icons-round">lock</span>
             Sem Permissão para Salvar
           </button>

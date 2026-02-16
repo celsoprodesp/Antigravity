@@ -44,13 +44,13 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, setOrders, onNewOrder }) 
   };
 
   return (
-    <div className="space-y-8 min-h-full flex flex-col">
-      <div className="flex justify-between items-end">
+    <div className="space-y-6 md:space-y-8 min-h-full flex flex-col pb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Fluxo de Pedidos</h2>
+          <h2 className="text-xl md:text-2xl font-bold">Fluxo de Pedidos</h2>
           <p className="text-sm text-slate-500">Gerencie a logística em tempo real</p>
         </div>
-        <button onClick={onNewOrder} className="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
+        <button onClick={onNewOrder} className="w-full sm:w-auto bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
           <span className="material-icons-round text-lg">add</span> Novo Pedido
         </button>
       </div>
@@ -99,9 +99,9 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, setOrders, onNewOrder }) 
 
       {/* Kanban columns com barra de rolagem horizontal */}
       <div ref={scrollContainerRef} className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
-        <div className="flex gap-4 min-w-max h-full">
+        <div className="flex gap-4 min-w-max md:min-w-0 h-full">
           {columns.map(col => (
-            <div key={col.status} id={`column-${col.status}`} className="min-w-[260px] w-[260px] flex flex-col h-full scroll-mt-20">
+            <div key={col.status} id={`column-${col.status}`} className="min-w-[280px] sm:min-w-[300px] md:w-1/4 flex flex-col h-full scroll-mt-20">
               <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full bg-${col.color === 'primary' ? 'primary' : col.color + '-400'}`}></div>

@@ -37,6 +37,7 @@ const App: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(localStorage.getItem('erp_selectedId'));
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(localStorage.getItem('erp_sidebarExpanded') === 'true');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [transactionCategories, setTransactionCategories] = useState<any[]>([]);
 
   useEffect(() => {
@@ -393,17 +394,37 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-100 transition-colors duration-300">
-      <Sidebar
-        currentView={currentView}
-        onNavigate={handleNavigate}
-        isExpanded={isSidebarExpanded}
-        setIsExpanded={setIsSidebarExpanded}
-        user={currentUser}
-        onEditCurrentUser={() => handleNavigate('EDIT_MY_PROFILE')}
-        checkPermission={getPagePermission}
-      />
-      <main className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex h-screen bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-100 transition-colors duration-300 overflow-hidden">
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 md:hidden animate-fadeIn"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      <div className={`
+        fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <Sidebar
+          currentView={currentView}
+          onNavigate={(view, id) => {
+            handleNavigate(view, id);
+            setIsMobileMenuOpen(false);
+          }}
+          isExpanded={isSidebarExpanded}
+          setIsExpanded={setIsSidebarExpanded}
+          user={currentUser}
+          onEditCurrentUser={() => {
+            handleNavigate('EDIT_MY_PROFILE');
+            setIsMobileMenuOpen(false);
+          }}
+          checkPermission={getPagePermission}
+        />
+      </div>
+
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <TopBar
           onSearch={(query) => {
             const q = query.toLowerCase();
@@ -416,8 +437,9 @@ const App: React.FC = () => {
             else if (q.includes('perfil')) handleNavigate('CLIENT_PROFILE');
           }}
           onSignOut={handleSignOut}
+          toggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         />
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 animate-fadeIn">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 animate-fadeIn custom-scrollbar">
           {renderView()}
         </div>
       </main>

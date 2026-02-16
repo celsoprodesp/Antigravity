@@ -225,17 +225,17 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
 
   return (
     <div className="space-y-8 pb-10">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Fluxo de Caixa</h2>
+          <h2 className="text-xl md:text-2xl font-bold">Fluxo de Caixa</h2>
           <p className="text-sm text-slate-500">Analytics e gestão financeira</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           {permission.canWrite && (
             <button
               onClick={getAiInsights}
               disabled={loadingAi}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-emerald-200 dark:shadow-emerald-900/30 flex items-center gap-2 disabled:opacity-50"
+              className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-emerald-200 dark:shadow-emerald-900/30 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <span className="material-icons-round text-base">{loadingAi ? 'sync' : 'auto_awesome'}</span>
               <span>{loadingAi ? 'Analisando...' : 'Insights Estratégicos'}</span>
@@ -244,7 +244,7 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
           {permission.canWrite && (
             <button
               onClick={() => setShowNewModal(true)}
-              className="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
+              className="w-full sm:w-auto bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
             >
               <span className="material-icons-round text-base">add</span>
               <span>Novo Lançamento</span>
@@ -353,20 +353,20 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <p className="text-sm text-slate-500 mb-1">Receita Total</p>
-          <h3 className="text-2xl font-bold">R$ {transactions.filter(t => t.type === 'RECEITA').reduce((acc, t) => acc + t.amount, 0).toLocaleString('pt-BR')}</h3>
+          <h3 className="text-xl md:text-2xl font-bold">R$ {transactions.filter(t => t.type === 'RECEITA').reduce((acc, t) => acc + t.amount, 0).toLocaleString('pt-BR')}</h3>
           <span className="text-xs text-green-500 font-medium">Lançamentos confirmados</span>
         </div>
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <p className="text-sm text-slate-500 mb-1">Despesas Totais</p>
-          <h3 className="text-2xl font-bold">R$ {transactions.filter(t => t.type === 'DESPESA').reduce((acc, t) => acc + t.amount, 0).toLocaleString('pt-BR')}</h3>
+          <h3 className="text-xl md:text-2xl font-bold">R$ {transactions.filter(t => t.type === 'DESPESA').reduce((acc, t) => acc + t.amount, 0).toLocaleString('pt-BR')}</h3>
           <span className="text-xs text-red-500 font-medium">Saídas registradas</span>
         </div>
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm sm:col-span-2 md:col-span-1">
           <p className="text-sm text-slate-500 mb-1">Saldo Líquido</p>
-          <h3 className="text-2xl font-bold text-emerald-500">R$ {(transactions.filter(t => t.type === 'RECEITA').reduce((acc, t) => acc + t.amount, 0) - transactions.filter(t => t.type === 'DESPESA').reduce((acc, t) => acc + t.amount, 0)).toLocaleString('pt-BR')}</h3>
+          <h3 className="text-xl md:text-2xl font-bold text-emerald-500">R$ {(transactions.filter(t => t.type === 'RECEITA').reduce((acc, t) => acc + t.amount, 0) - transactions.filter(t => t.type === 'DESPESA').reduce((acc, t) => acc + t.amount, 0)).toLocaleString('pt-BR')}</h3>
           <span className="text-xs text-slate-400">Diferença entre entradas e saídas</span>
         </div>
       </div>
@@ -400,43 +400,45 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
           <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
             <h3 className="font-bold">Últimos Lançamentos</h3>
             {/* Filtros */}
-            <div className="flex flex-wrap gap-3 items-center">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap gap-2 md:gap-3 items-center w-full md:w-auto">
+              <div className="flex items-center gap-2 flex-grow sm:flex-grow-0">
                 <label className="text-xs text-slate-500 whitespace-nowrap">De:</label>
                 <input
                   type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)}
-                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-grow sm:flex-grow-0">
                 <label className="text-xs text-slate-500 whitespace-nowrap">Até:</label>
                 <input
                   type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)}
-                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
               <select
                 value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full sm:w-auto bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
                 <option value="">Todas Categorias</option>
                 {transactionCategories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
               </select>
-              <button
-                onClick={handleSearch}
-                className="bg-primary hover:bg-primary-dark text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-all shadow-sm flex items-center gap-1"
-              >
-                <span className="material-icons-round text-sm">search</span>
-                <span>Pesquisar</span>
-              </button>
-              {(appliedFilters.category || appliedFilters.dateFrom || appliedFilters.dateTo) && (
+              <div className="flex gap-2 w-full sm:w-auto">
                 <button
-                  onClick={handleClear}
-                  className="text-xs text-primary hover:text-primary-dark font-medium transition-colors"
+                  onClick={handleSearch}
+                  className="flex-1 sm:flex-none bg-primary hover:bg-primary-dark text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-all shadow-sm flex items-center justify-center gap-1"
                 >
-                  Limpar
+                  <span className="material-icons-round text-sm">search</span>
+                  <span>Pesquisar</span>
                 </button>
-              )}
+                {(appliedFilters.category || appliedFilters.dateFrom || appliedFilters.dateTo) && (
+                  <button
+                    onClick={handleClear}
+                    className="flex-1 sm:flex-none text-xs text-primary hover:text-primary-dark font-medium transition-colors"
+                  >
+                    Limpar
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
