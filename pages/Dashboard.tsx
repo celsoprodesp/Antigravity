@@ -64,7 +64,7 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, setOrders, onNewOrder }) 
             <div
               key={col.status}
               onClick={() => scrollToColumn(col.status)}
-              className="min-w-[200px] flex-shrink-0 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/30 cursor-pointer transition-all group"
+              className="w-[300px] flex-shrink-0 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/30 cursor-pointer transition-all group"
             >
               <div className="flex items-center gap-2 mb-2">
                 <div className={`w-7 h-7 rounded-lg bg-${col.color === 'primary' ? 'primary' : col.color + '-500'}/10 flex items-center justify-center`}>
@@ -88,7 +88,7 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, setOrders, onNewOrder }) 
           );
         })}
         {/* Total Geral */}
-        <div className="min-w-[180px] flex-shrink-0 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+        <div className="w-[300px] flex-shrink-0 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
           <p className="text-[10px] text-slate-500 font-bold uppercase mb-2">Total Consolidado</p>
           <div className="space-y-1">
             <p className="text-lg font-black text-slate-900 dark:text-white leading-none">R$ {orders.reduce((acc, curr) => acc + curr.amount, 0).toLocaleString('pt-BR')}</p>
@@ -99,9 +99,9 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, setOrders, onNewOrder }) 
 
       {/* Kanban columns com barra de rolagem horizontal */}
       <div ref={scrollContainerRef} className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
-        <div className="flex gap-4 min-w-max md:min-w-0 h-full">
+        <div className="flex gap-3 min-w-max md:min-w-0 h-full">
           {columns.map(col => (
-            <div key={col.status} id={`column-${col.status}`} className="min-w-[200px] md:w-1/4 flex flex-col h-full scroll-mt-20">
+            <div key={col.status} id={`column-${col.status}`} className="w-[300px] flex-shrink-0 flex flex-col h-full scroll-mt-20">
               <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full bg-${col.color === 'primary' ? 'primary' : col.color + '-400'}`}></div>
@@ -114,12 +114,12 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, setOrders, onNewOrder }) 
 
               <div className="flex-1 overflow-y-auto pr-2 space-y-2 max-h-[460px] custom-scrollbar pb-2">
                 {orders.filter(o => o.status === col.status).map(order => (
-                  <div key={order.id} onClick={() => { setSelectedOrder(order); setShowDetailModal(true); }} className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group">
+                  <div key={order.id} onClick={() => { setSelectedOrder(order); setShowDetailModal(true); }} className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group h-[145px] flex flex-col justify-between">
                     <div className="flex justify-between items-start mb-1.5">
                       <span className="text-[9px] font-mono text-slate-400 tracking-tighter">{order.orderNumber}</span>
                     </div>
                     <h4 className="text-[13px] font-bold mb-0.5 leading-tight">{order.clientName}</h4>
-                    <p className="text-[11px] text-slate-500 line-clamp-2 mb-2 leading-tight">{order.description}</p>
+                    <p className="text-[11px] text-slate-500 line-clamp-2 mb-2 leading-tight h-[26px]">{order.description}</p>
 
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
                       <div className="flex items-center gap-1.5">
@@ -180,8 +180,12 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, setOrders, onNewOrder }) 
                     <p className="text-xs text-slate-500">{selectedOrder.timeAgo}</p>
                   </div>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${selectedOrder.status === 'CONCLUIDO' ? 'bg-emerald-500 text-white' : 'bg-primary text-white'}`}>
-                  {selectedOrder.status}
+                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-white ${selectedOrder.status === 'PENDENTE' ? 'bg-amber-500' :
+                    selectedOrder.status === 'PREPARACAO' ? 'bg-primary' :
+                      selectedOrder.status === 'ENVIADO' ? 'bg-purple-500' :
+                        'bg-emerald-500'
+                  }`}>
+                  {columns.find(c => c.status === selectedOrder.status)?.title || selectedOrder.status}
                 </span>
               </div>
 

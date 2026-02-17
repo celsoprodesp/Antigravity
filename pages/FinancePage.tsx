@@ -449,6 +449,7 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
                 <th className="px-6 py-4">Data</th>
                 <th className="px-6 py-4">Descrição</th>
                 <th className="px-6 py-4">Categoria</th>
+                <th className="px-6 py-4">Tipo</th>
                 <th className="px-6 py-4 text-right">Valor</th>
                 <th className="px-6 py-4 text-center">Ações</th>
               </tr>
@@ -460,6 +461,11 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
                   <td className="px-6 py-4 font-medium">{t.description}</td>
                   <td className="px-6 py-4">
                     <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg text-xs">{t.category}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${t.type === 'RECEITA' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                      {t.type === 'RECEITA' ? 'Receita' : 'Despesa'}
+                    </span>
                   </td>
                   <td className={`px-6 py-4 text-right font-bold ${t.type === 'RECEITA' ? 'text-emerald-500' : 'text-rose-500'}`}>
                     {t.type === 'RECEITA' ? '+' : '-'} R$ {t.amount.toLocaleString('pt-BR')}
