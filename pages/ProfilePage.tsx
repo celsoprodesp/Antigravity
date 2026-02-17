@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Client, Order } from '../../types';
+import { Client, Order } from '../types';
 
 interface ProfilePageProps {
   client: Client;
@@ -85,7 +85,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ client, orders, onNewOrder, o
                 {orders.map(o => (
                   <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="py-4 font-bold text-primary">{o.orderNumber}</td>
-                    <td className="py-4 text-slate-500">{o.timeAgo}</td>
+                    <td className="py-4 text-slate-500">{o.createdAt}</td>
                     <td className="py-4">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${o.status === 'CONCLUIDO' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
                         }`}>

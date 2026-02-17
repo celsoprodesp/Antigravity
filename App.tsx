@@ -184,7 +184,8 @@ const App: React.FC = () => {
         timeAgo: o.time_ago,
         clientAvatar: o.client_avatar,
         clientInitials: o.client_initials,
-        paymentMethod: o.payment_method
+        paymentMethod: o.payment_method,
+        createdAt: new Date(o.created_at).toLocaleDateString('pt-BR')
       })));
     }
   };

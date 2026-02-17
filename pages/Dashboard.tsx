@@ -101,7 +101,7 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, setOrders, onNewOrder }) 
       <div ref={scrollContainerRef} className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
         <div className="flex gap-4 min-w-max md:min-w-0 h-full">
           {columns.map(col => (
-            <div key={col.status} id={`column-${col.status}`} className="min-w-[280px] sm:min-w-[300px] md:w-1/4 flex flex-col h-full scroll-mt-20">
+            <div key={col.status} id={`column-${col.status}`} className="min-w-[200px] md:w-1/4 flex flex-col h-full scroll-mt-20">
               <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full bg-${col.color === 'primary' ? 'primary' : col.color + '-400'}`}></div>
@@ -119,7 +119,7 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, setOrders, onNewOrder }) 
                       <span className="text-[9px] font-mono text-slate-400 tracking-tighter">{order.orderNumber}</span>
                     </div>
                     <h4 className="text-[13px] font-bold mb-0.5 leading-tight">{order.clientName}</h4>
-                    <p className="text-[11px] text-slate-500 line-clamp-1 mb-2 leading-tight">{order.description}</p>
+                    <p className="text-[11px] text-slate-500 line-clamp-2 mb-2 leading-tight">{order.description}</p>
 
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
                       <div className="flex items-center gap-1.5">
