@@ -1,5 +1,5 @@
 
-export type OrderStatus = 'PENDENTE' | 'PREPARACAO' | 'ENVIADO' | 'CONCLUIDO';
+export type OrderStatus = 'PENDENTE' | 'PREPARACAO' | 'ENVIADO' | 'CONCLUIDO' | 'CANCELADO';
 
 export interface Order {
   id: string;
@@ -88,4 +88,4 @@ export interface User {
   role?: string; // Optional display role
 }
 
-export type ViewType = 'DASHBOARD' | 'CLIENTS' | 'FINANCE' | 'NEW_ORDER' | 'SETTINGS' | 'CLIENT_PROFILE' | 'REGISTER_CLIENT' | 'REGISTER_ITEM' | 'REGISTER_CATEGORY' | 'ADMIN' | 'REGISTER_PROFILE' | 'REGISTER_USER' | 'EDIT_MY_PROFILE';
+export type ViewType = 'DASHBOARD' | 'CLIENTS' | 'FINANCE' | 'NEW_ORDER' | 'SETTINGS' | 'CLIENT_PROFILE' | 'REGISTER_CLIENT' | 'REGISTER_ITEM' | 'REGISTER_CATEGORY' | 'ADMIN' | 'REGISTER_PROFILE' | 'REGISTER_USER' | 'EDIT_MY_PROFILE' | 'SEARCH_ORDERS' | 'USER_MANAGEMENT';

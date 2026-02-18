@@ -4,8 +4,6 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { GoogleGenAI } from "@google/genai";
 import { supabase } from '../supabaseClient';
 
-// DATA removed in favor of dynamic calculation
-
 interface FinancePageProps {
   transactions: Transaction[];
   transactionCategories: any[];
@@ -21,7 +19,6 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
   const [filterCategory, setFilterCategory] = useState('');
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
-  const [appliedFilters, setAppliedFilters] = useState({ category: '', dateFrom: '', dateTo: '' });
 
   // New transaction form
   const [newDesc, setNewDesc] = useState('');
@@ -35,17 +32,14 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
 
 
   const filteredTransactions = transactions.filter(t => {
-    if (appliedFilters.category && t.category !== appliedFilters.category) return false;
+    if (filterCategory && t.category !== filterCategory) return false;
 
     // Filtro de Data
-    if (appliedFilters.dateFrom || appliedFilters.dateTo) {
-      // Converter data da transação "DD/MM, HH:mm" para objeto Date para comparação
-      // Assumindo ano atual para simplificação, já que o formato não tem ano
+    if (filterDateFrom || filterDateTo) {
       const currentYear = new Date().getFullYear();
 
-      // Parse robusto da data (suporta "Hoje", "Ontem", "DD MMM", "DD/MM")
       let transDate: Date | null = null;
-      const dateStr = t.date.split(',')[0].trim(); // Pega a parte da data antes da vírgula (se houver)
+      const dateStr = t.date.split(',')[0].trim();
 
       if (dateStr.toLowerCase() === 'hoje') {
         transDate = new Date();
@@ -55,24 +49,20 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
         transDate.setDate(transDate.getDate() - 1);
         transDate.setHours(0, 0, 0, 0);
       } else {
-        // Tenta formatos numéricos e textuais
-        const parts = dateStr.split(/[\/\s]+/); // Divide por / ou espaço
+        const parts = dateStr.split(/[\/\s]+/);
         if (parts.length >= 2) {
           const day = parseInt(parts[0]);
           let monthIndex = -1;
 
-          // Mapa de meses abreviados (ajuste conforme necessario)
           const monthsMap: { [key: string]: number } = {
             'jan': 0, 'fev': 1, 'mar': 2, 'abr': 3, 'mai': 4, 'jun': 5,
             'jul': 6, 'ago': 7, 'set': 8, 'out': 9, 'nov': 10, 'dez': 11
           };
 
           if (isNaN(parseInt(parts[1]))) {
-            // Formato DD MMM (ex: 28 Out)
             const monthStr = parts[1].toLowerCase().substring(0, 3);
             monthIndex = monthsMap[monthStr] !== undefined ? monthsMap[monthStr] : -1;
           } else {
-            // Formato DD/MM
             monthIndex = parseInt(parts[1]) - 1;
           }
 
@@ -83,14 +73,14 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
       }
 
       if (transDate) {
-        if (appliedFilters.dateFrom) {
-          const fromDate = new Date(appliedFilters.dateFrom); // YYYY-MM-DD
+        if (filterDateFrom) {
+          const fromDate = new Date(filterDateFrom);
           fromDate.setHours(0, 0, 0, 0);
           if (transDate < fromDate) return false;
         }
 
-        if (appliedFilters.dateTo) {
-          const toDate = new Date(appliedFilters.dateTo); // YYYY-MM-DD
+        if (filterDateTo) {
+          const toDate = new Date(filterDateTo);
           toDate.setHours(23, 59, 59, 999);
           if (transDate > toDate) return false;
         }
@@ -100,15 +90,12 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
     return true;
   });
 
-  // Agrupar transações por data para o gráfico
   const chartData = React.useMemo(() => {
     const dataMap = new Map<string, { name: string, receita: number, despesa: number }>();
-
-    // Ordenar transações por data (assumindo formato string simples por enquanto, ideal seria converter para Date)
-    const sorted = [...filteredTransactions].reverse(); // Assumindo que vêm do mais novo para o mais antigo
+    const sorted = [...filteredTransactions].reverse();
 
     sorted.forEach(t => {
-      const dateKey = t.date.split(',')[0]; // Pega só a data DD/MM
+      const dateKey = t.date.split(',')[0];
       if (!dataMap.has(dateKey)) {
         dataMap.set(dateKey, { name: dateKey, receita: 0, despesa: 0 });
       }
@@ -123,15 +110,10 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
     return Array.from(dataMap.values());
   }, [filteredTransactions]);
 
-  const handleSearch = () => {
-    setAppliedFilters({ category: filterCategory, dateFrom: filterDateFrom, dateTo: filterDateTo });
-  };
-
   const handleClear = () => {
     setFilterCategory('');
     setFilterDateFrom('');
     setFilterDateTo('');
-    setAppliedFilters({ category: '', dateFrom: '', dateTo: '' });
   };
 
   const getAiInsights = async () => {
@@ -201,7 +183,6 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
     setNewCategory(t.category);
     setNewAmount(t.amount);
     setNewType(t.type);
-    // Assuming date format matches or we just use current date
     setNewDate(new Date().toISOString().split('T')[0]);
     setShowNewModal(true);
   };
@@ -424,20 +405,11 @@ const FinancePage: React.FC<FinancePageProps> = ({ transactions, transactionCate
               </select>
               <div className="flex gap-2 w-full sm:w-auto">
                 <button
-                  onClick={handleSearch}
-                  className="flex-1 sm:flex-none bg-primary hover:bg-primary-dark text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-all shadow-sm flex items-center justify-center gap-1"
+                  onClick={handleClear}
+                  className="flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
-                  <span className="material-icons-round text-sm">search</span>
-                  <span>Pesquisar</span>
+                  Limpar
                 </button>
-                {(appliedFilters.category || appliedFilters.dateFrom || appliedFilters.dateTo) && (
-                  <button
-                    onClick={handleClear}
-                    className="flex-1 sm:flex-none text-xs text-primary hover:text-primary-dark font-medium transition-colors"
-                  >
-                    Limpar
-                  </button>
-                )}
               </div>
             </div>
           </div>

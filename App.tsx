@@ -16,6 +16,8 @@ import AdminPage from './pages/AdminPage';
 import RegisterProfilePage from './pages/RegisterProfilePage';
 import RegisterUserPage from './pages/RegisterUserPage';
 import EditMyProfilePage from './pages/EditMyProfilePage';
+import SearchOrdersPage from './pages/SearchOrdersPage';
+import UserManagementPage from './pages/UserManagementPage';
 import LoginPage from './pages/LoginPage';
 import { supabase } from './supabaseClient';
 import { Session } from '@supabase/supabase-js';
@@ -220,10 +222,11 @@ const App: React.FC = () => {
     if (view === 'DASHBOARD') return defaultFullPerm;
 
     // Mapping views to their base permission keys
-    let permissionKey = view;
+    let permissionKey: string = view;
     if (view === 'CLIENT_PROFILE' || view === 'REGISTER_CLIENT') permissionKey = 'CLIENTS';
     else if (view === 'REGISTER_ITEM' || view === 'REGISTER_CATEGORY') permissionKey = 'REGISTER_ITEM';
-    else if (view === 'REGISTER_PROFILE' || view === 'REGISTER_USER') permissionKey = 'ADMIN';
+    else if (view === 'REGISTER_PROFILE' || view === 'REGISTER_USER' || view === 'USER_MANAGEMENT') permissionKey = 'ADMIN';
+    else if (view === 'SEARCH_ORDERS') permissionKey = 'DASHBOARD';
 
     const perm = permissions.find(p => p.profileId === currentUser?.profileId && p.pageKey === permissionKey);
 
@@ -287,9 +290,10 @@ const App: React.FC = () => {
         return <NewOrderPage
           clients={clients}
           items={items}
+          editingOrder={orders.find(o => o.id === selectedId)}
           onCancel={() => handleNavigate('DASHBOARD')}
           onSave={(newOrder) => {
-            setOrders([newOrder, ...orders]);
+            refreshData(); // Refresh all data ensuring state consistency
             handleNavigate('DASHBOARD');
           }}
           onNavigateNewClient={() => handleNavigate('REGISTER_CLIENT')}
@@ -384,6 +388,21 @@ const App: React.FC = () => {
           }}
           onCancel={goBack}
           permission={getPagePermission('EDIT_MY_PROFILE')}
+        />;
+      case 'SEARCH_ORDERS':
+        return <SearchOrdersPage
+          orders={orders}
+          onEditOrder={(id) => handleNavigate('NEW_ORDER', id)}
+          onCancel={() => handleNavigate('DASHBOARD')}
+        />;
+      case 'USER_MANAGEMENT':
+        return <UserManagementPage
+          users={users}
+          profiles={profiles}
+          onNavigateRegisterUser={() => handleNavigate('REGISTER_USER')}
+          onEditUser={(id) => handleNavigate('REGISTER_USER', id)}
+          onCancel={() => handleNavigate('ADMIN')}
+          permission={getPagePermission('USER_MANAGEMENT')}
         />;
       default:
         return <Dashboard orders={orders} setOrders={setOrders} onNewOrder={() => handleNavigate('NEW_ORDER')} />;

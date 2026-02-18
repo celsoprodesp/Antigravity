@@ -134,9 +134,9 @@ const AdminPage: React.FC<AdminPageProps> = ({
                 )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Coluna Esquerda: Perfis e Permissões */}
-                <div className="lg:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 gap-8">
+                {/* Coluna Única: Perfis e Permissões */}
+                <div className="space-y-6">
                     <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="font-bold flex items-center gap-2">
@@ -239,50 +239,6 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                     )}
                                 </tbody>
                             </table>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Coluna Direita: Usuários */}
-                <div className="lg:col-span-1">
-                    <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm sticky top-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="font-bold flex items-center gap-2">
-                                <span className="material-icons-round text-primary">people</span> Usuários
-                            </h3>
-                            <button
-                                onClick={onNavigateRegisterUser}
-                                className="bg-primary hover:bg-primary-dark text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg shadow-primary/20 transition-all flex items-center gap-1"
-                            >
-                                <span className="material-icons-round text-sm">add</span> Novo
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            {users.map(user => {
-                                const userProfile = profiles.find(p => p.id === user.profileId);
-                                return (
-                                    <div key={user.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold">
-                                            {user.avatar ?
-                                                <img src={user.avatar} className="w-full h-full rounded-full object-cover" alt={user.name} />
-                                                : user.name.charAt(0)}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-sm truncate">{user.name}</p>
-                                            <p className="text-xs text-slate-500 truncate">{user.email}</p>
-                                        </div>
-                                        <div className="flex flex-col items-end gap-1">
-                                            <span className="text-[10px] font-bold px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 capitalize">
-                                                {userProfile?.name || 'Sem perfil'}
-                                            </span>
-                                            <button onClick={() => onEditUser(user.id)} className="p-1 rounded hover:bg-primary/10 text-slate-400 hover:text-primary transition-all">
-                                                <span className="material-icons-round text-xs">edit</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
                         </div>
                     </div>
                 </div>

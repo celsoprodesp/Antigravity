@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Client, Order, OrderStatus, Item, OrderItem, PagePermission } from '../types';
 import { supabase } from '../supabaseClient';
 
 interface NewOrderPageProps {
   clients: Client[];
   items: Item[];
+  editingOrder?: Order;
   onCancel: () => void;
   onSave: (order: Order) => void;
   onNavigateNewClient: () => void;
@@ -14,7 +15,7 @@ interface NewOrderPageProps {
 }
 
 const NewOrderPage: React.FC<NewOrderPageProps> = ({
-  clients, items, onCancel, onSave,
+  clients, items, editingOrder, onCancel, onSave,
   onNavigateNewClient, onNavigateNewItem, onEditClient, permission
 }) => {
 
@@ -24,6 +25,21 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
   const [selectedItemId, setSelectedItemId] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('PIX');
+
+  useEffect(() => {
+    if (editingOrder) {
+      const client = clients.find(c => c.name === editingOrder.clientName);
+      setSelectedClient(client || null);
+      setStatus(editingOrder.status);
+      setOrderItems(editingOrder.items || []);
+      setPaymentMethod(editingOrder.paymentMethod || 'PIX');
+    } else {
+      setSelectedClient(null);
+      setStatus('PENDENTE');
+      setOrderItems([]);
+      setPaymentMethod('PIX');
+    }
+  }, [editingOrder, clients]);
 
   const addItem = () => {
     const item = items.find(i => i.id === selectedItemId);
@@ -58,8 +74,8 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
     if (!selectedClient) return alert('Selecione um cliente');
     if (orderItems.length === 0) return alert('Adicione pelo menos um item');
 
-    const orderId = Math.random().toString(36).substr(2, 9);
-    const orderNumber = `#ORD-${Math.floor(Math.random() * 10000)}`;
+    const orderId = editingOrder?.id || Math.random().toString(36).substr(2, 9);
+    const orderNumber = editingOrder?.orderNumber || `#ORD-${Math.floor(Math.random() * 10000)}`;
 
     const newOrder: Order = {
       id: orderId,
@@ -68,30 +84,55 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
       description: orderItems.map(oi => `${oi.quantity}x ${oi.itemName}`).join(', '),
       status,
       amount: totalAmount,
-      timeAgo: 'Agora',
+      timeAgo: editingOrder?.timeAgo || 'Agora',
       clientAvatar: selectedClient.avatar,
       clientInitials: selectedClient.initials,
       items: orderItems,
       paymentMethod,
+      createdAt: editingOrder?.createdAt
     };
 
-    // 1. Salvar o pedido (Order)
-    const { error: orderError } = await supabase.from('orders').insert({
-      id: newOrder.id,
-      order_number: newOrder.orderNumber,
-      client_name: newOrder.clientName,
-      description: newOrder.description,
-      status: newOrder.status,
-      amount: newOrder.amount,
-      time_ago: newOrder.timeAgo,
-      client_avatar: newOrder.clientAvatar,
-      client_initials: newOrder.clientInitials,
-      payment_method: newOrder.paymentMethod
-    });
+    if (editingOrder) {
+      // Update existing order
+      const { error: orderError } = await supabase.from('orders').update({
+        client_name: newOrder.clientName,
+        description: newOrder.description,
+        status: newOrder.status,
+        amount: newOrder.amount,
+        client_avatar: newOrder.clientAvatar,
+        client_initials: newOrder.clientInitials,
+        payment_method: newOrder.paymentMethod
+      }).eq('id', editingOrder.id);
 
-    if (orderError) {
-      alert('Erro ao salvar pedido: ' + orderError.message);
-      return;
+      if (orderError) {
+        alert('Erro ao atualizar pedido: ' + orderError.message);
+        return;
+      }
+
+      // Update order items: delete and re-insert for simplicity
+      const { error: deleteError } = await supabase.from('order_items').delete().eq('order_id', editingOrder.id);
+      if (deleteError) {
+        console.error('Erro ao limpar itens antigos:', deleteError);
+      }
+    } else {
+      // 1. Salvar o novo pedido
+      const { error: orderError } = await supabase.from('orders').insert({
+        id: newOrder.id,
+        order_number: newOrder.orderNumber,
+        client_name: newOrder.clientName,
+        description: newOrder.description,
+        status: newOrder.status,
+        amount: newOrder.amount,
+        time_ago: newOrder.timeAgo,
+        client_avatar: newOrder.clientAvatar,
+        client_initials: newOrder.clientInitials,
+        payment_method: newOrder.paymentMethod
+      });
+
+      if (orderError) {
+        alert('Erro ao salvar pedido: ' + orderError.message);
+        return;
+      }
     }
 
     // 2. Salvar os itens do pedido (OrderItems)
@@ -101,7 +142,7 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
       item_name: oi.itemName,
       quantity: oi.quantity,
       unit_price: oi.unitPrice,
-      total: oi.total.toString() // assuming total is a string in OrderItem based on previous code or just good to keep consistent
+      total: oi.total.toString()
     }));
 
     const { error: itemsError } = await supabase.from('order_items').insert(dbItems);
@@ -118,8 +159,8 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
     <div className="max-w-5xl mx-auto space-y-8 animate-fadeIn h-full overflow-y-auto pb-20">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold">Novo Pedido</h2>
-          <p className="text-sm text-slate-500">Preencha os dados da venda</p>
+          <h2 className="text-xl md:text-2xl font-bold">{editingOrder ? 'Editar Pedido' : 'Novo Pedido'}</h2>
+          <p className="text-sm text-slate-500">{editingOrder ? `Editando ${editingOrder.orderNumber}` : 'Preencha os dados da venda'}</p>
         </div>
       </div>
 
@@ -183,6 +224,8 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
               <option value="PENDENTE">Pendente</option>
               <option value="PREPARACAO">Preparação</option>
               <option value="ENVIADO">Enviado</option>
+              <option value="CONCLUIDO">Concluído</option>
+              <option value="CANCELADO">Cancelado</option>
             </select>
           </div>
 
@@ -292,11 +335,11 @@ const NewOrderPage: React.FC<NewOrderPageProps> = ({
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
-        <button onClick={onCancel} className="w-full sm:flex-1 px-8 py-4 rounded-xl font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Cancelar Pedido</button>
+        <button onClick={onCancel} className="w-full sm:flex-1 px-8 py-4 rounded-xl font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Cancelar</button>
         {permission.canWrite ? (
           <button onClick={handleSave} className="w-full sm:flex-[2] bg-primary hover:bg-primary-dark text-white px-10 py-4 rounded-xl font-bold shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-2">
             <span className="material-icons-round">check_circle</span>
-            Finalizar e Salvar Pedido
+            {editingOrder ? 'Atualizar Pedido' : 'Finalizar e Salvar Pedido'}
           </button>
         ) : (
           <button disabled className="w-full sm:flex-[2] bg-slate-200 text-slate-500 px-10 py-4 rounded-xl font-bold cursor-not-allowed flex items-center justify-center gap-2">

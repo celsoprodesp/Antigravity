@@ -14,7 +14,9 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onSelectClient, onNe
 
   const filtered = clients.filter(c =>
     c.name.toLowerCase().includes(filter.toLowerCase()) ||
-    c.company.toLowerCase().includes(filter.toLowerCase())
+    c.company.toLowerCase().includes(filter.toLowerCase()) ||
+    c.email.toLowerCase().includes(filter.toLowerCase()) ||
+    (c.phone || '').toLowerCase().includes(filter.toLowerCase())
   );
 
   return (
@@ -36,15 +38,23 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onSelectClient, onNe
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-4 justify-between items-center">
-          <div className="relative w-full sm:w-96">
-            <span className="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-            <input
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full border-slate-200 dark:border-slate-700 rounded-xl text-sm bg-slate-50 dark:bg-slate-800 focus:ring-primary focus:border-primary placeholder-slate-400"
-              placeholder="Buscar por nome, email ou empresa..."
-              type="text"
-            />
+          <div className="relative w-full sm:w-96 flex gap-2">
+            <div className="relative flex-1">
+              <span className="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+              <input
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                className="pl-10 pr-4 py-2 w-full border-slate-200 dark:border-slate-700 rounded-xl text-sm bg-slate-50 dark:bg-slate-800 focus:ring-primary focus:border-primary placeholder-slate-400"
+                placeholder="Buscar por nome, email, empresa ou telefone..."
+                type="text"
+              />
+            </div>
+            <button
+              onClick={() => setFilter('')}
+              className="px-4 py-2 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
+              Limpar
+            </button>
           </div>
         </div>
 

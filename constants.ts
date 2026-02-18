@@ -160,6 +160,8 @@ export const INITIAL_PERMISSIONS: PagePermission[] = [
   { id: '5', pageName: 'Cadastro de Clientes', pageKey: 'REGISTER_CLIENT', canRead: true, canWrite: true, canDelete: true, profileId: '1' },
   { id: '6', pageName: 'Cadastro de Itens', pageKey: 'REGISTER_ITEM', canRead: true, canWrite: true, canDelete: true, profileId: '1' },
   { id: '7', pageName: 'Administração', pageKey: 'ADMIN', canRead: true, canWrite: true, canDelete: true, profileId: '1' },
+  { id: '8', pageName: 'Pesquisar Pedido', pageKey: 'SEARCH_ORDERS', canRead: true, canWrite: true, canDelete: true, profileId: '1' },
+  { id: '9', pageName: 'Gestão de Usuários', pageKey: 'USER_MANAGEMENT', canRead: true, canWrite: true, canDelete: true, profileId: '1' },
 
   // Operador Permissions (Restricted)
   { id: '11', pageName: 'Dashboard', pageKey: 'DASHBOARD', canRead: true, canWrite: false, canDelete: false, profileId: '2' },
@@ -183,6 +185,8 @@ export const SYSTEM_PAGES = [
   { name: 'Cadastro de Usuários', key: 'REGISTER_USER' },
   { name: 'Configurações', key: 'SETTINGS' },
   { name: 'Administração', key: 'ADMIN' },
+  { name: 'Pesquisar Pedido', key: 'SEARCH_ORDERS' },
+  { name: 'Gestão de Usuários', key: 'USER_MANAGEMENT' },
   { name: 'Meu Perfil', key: 'EDIT_MY_PROFILE' },
 ];
 

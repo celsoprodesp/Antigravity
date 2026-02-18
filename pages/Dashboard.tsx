@@ -25,6 +25,7 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, setOrders, onNewOrder }) 
     { title: 'Em Preparação', status: 'PREPARACAO', color: 'primary' },
     { title: 'Enviado', status: 'ENVIADO', color: 'purple' },
     { title: 'Concluído', status: 'CONCLUIDO', color: 'emerald' },
+    { title: 'Cancelado', status: 'CANCELADO', color: 'rose' },
   ];
 
   const updateStatus = async (id: string, newStatus: OrderStatus) => {
@@ -69,7 +70,7 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, setOrders, onNewOrder }) 
               <div className="flex items-center gap-2 mb-2">
                 <div className={`w-7 h-7 rounded-lg bg-${col.color === 'primary' ? 'primary' : col.color + '-500'}/10 flex items-center justify-center`}>
                   <span className={`material-icons-round text-${col.color === 'primary' ? 'primary' : col.color + '-500'} text-base`}>
-                    {col.status === 'PENDENTE' ? 'schedule' : col.status === 'PREPARACAO' ? 'inventory_2' : col.status === 'ENVIADO' ? 'local_shipping' : 'check_circle'}
+                    {col.status === 'PENDENTE' ? 'schedule' : col.status === 'PREPARACAO' ? 'inventory_2' : col.status === 'ENVIADO' ? 'local_shipping' : col.status === 'CONCLUIDO' ? 'check_circle' : 'cancel'}
                   </span>
                 </div>
                 <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-primary transition-colors">{col.title}</p>
@@ -181,9 +182,10 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, setOrders, onNewOrder }) 
                   </div>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-white ${selectedOrder.status === 'PENDENTE' ? 'bg-amber-500' :
-                    selectedOrder.status === 'PREPARACAO' ? 'bg-primary' :
-                      selectedOrder.status === 'ENVIADO' ? 'bg-purple-500' :
-                        'bg-emerald-500'
+                  selectedOrder.status === 'PREPARACAO' ? 'bg-primary' :
+                    selectedOrder.status === 'ENVIADO' ? 'bg-purple-500' :
+                      selectedOrder.status === 'CONCLUIDO' ? 'bg-emerald-500' :
+                        'bg-rose-500'
                   }`}>
                   {columns.find(c => c.status === selectedOrder.status)?.title || selectedOrder.status}
                 </span>

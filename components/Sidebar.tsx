@@ -17,11 +17,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isExpanded, 
   const menuItems: { icon: string; view: ViewType; label: string; group?: boolean }[] = [
     { icon: 'dashboard', view: 'DASHBOARD' as ViewType, label: 'Dashboard' },
     { icon: 'shopping_bag', view: 'NEW_ORDER' as ViewType, label: 'Novo Pedido' },
+    { icon: 'search', view: 'SEARCH_ORDERS' as ViewType, label: 'Pesquisar Pedido' },
     { icon: 'people', view: 'CLIENTS' as ViewType, label: 'Clientes' },
     { icon: 'account_balance_wallet', view: 'FINANCE' as ViewType, label: 'Financeiro' },
     { icon: 'inventory_2', view: 'REGISTER_ITEM' as ViewType, label: 'Itens', group: true },
     { icon: 'category', view: 'REGISTER_CATEGORY' as ViewType, label: 'Categorias' },
-    { icon: 'admin_panel_settings', view: 'ADMIN' as ViewType, label: 'Administração', group: true },
+    { icon: 'groups', view: 'USER_MANAGEMENT' as ViewType, label: 'Usuários', group: true },
+    { icon: 'admin_panel_settings', view: 'ADMIN' as ViewType, label: 'Administração' },
     { icon: 'settings', view: 'SETTINGS' as ViewType, label: 'Configurações' },
   ].filter(item => {
     const perm = checkPermission(item.view);

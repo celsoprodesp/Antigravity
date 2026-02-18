@@ -19,6 +19,8 @@ const RegisterItemPage: React.FC<RegisterItemPageProps> = ({ items, categories, 
     const [categoryId, setCategoryId] = useState(editingItem?.categoryId || '');
     const [unitPrice, setUnitPrice] = useState(editingItem?.unitPrice || 0);
     const [unit, setUnit] = useState(editingItem?.unit || 'un');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [searchCategoryId, setSearchCategoryId] = useState('');
     const nameInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -187,11 +189,42 @@ const RegisterItemPage: React.FC<RegisterItemPageProps> = ({ items, categories, 
             {/* Listagem de Itens */}
             {items.length > 0 && (
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                    <div className="p-6 border-b border-slate-100 dark:border-slate-800">
-                        <h3 className="font-bold flex items-center gap-2">
-                            <span className="material-icons-outlined text-primary text-xl">list</span>
-                            Itens Cadastrados ({items.length})
-                        </h3>
+                    <div className="p-6 border-b border-slate-100 dark:border-slate-800 space-y-4">
+                        <div className="flex justify-between items-center">
+                            <h3 className="font-bold flex items-center gap-2">
+                                <span className="material-icons-outlined text-primary text-xl">list</span>
+                                Itens Cadastrados ({items.length})
+                            </h3>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="relative">
+                                <span className="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+                                <input
+                                    type="text"
+                                    placeholder="Filtrar por nome..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 transition-all"
+                                />
+                            </div>
+                            <div className="flex gap-2">
+                                <select
+                                    value={searchCategoryId}
+                                    onChange={(e) => setSearchCategoryId(e.target.value)}
+                                    className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 transition-all"
+                                >
+                                    <option value="">Todas as Categorias</option>
+                                    {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                                </select>
+                                <button
+                                    onClick={() => { setSearchTerm(''); setSearchCategoryId(''); }}
+                                    className="px-4 py-2 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                >
+                                    Limpar
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
@@ -205,30 +238,36 @@ const RegisterItemPage: React.FC<RegisterItemPageProps> = ({ items, categories, 
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {items.map(item => (
-                                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                        <td className="px-6 py-4 font-medium">{item.name}</td>
-                                        <td className="px-6 py-4">
-                                            <span className="bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg text-xs">{item.categoryName}</span>
-                                        </td>
-                                        <td className="px-6 py-4 text-slate-500">{item.unit}</td>
-                                        <td className="px-6 py-4 text-right font-semibold">R$ {item.unitPrice.toLocaleString('pt-BR')}</td>
-                                        <td className="px-6 py-4 text-center">
-                                            <div className="flex justify-center gap-2">
-                                                {permission.canWrite && (
-                                                    <button onClick={() => onEditItem(item.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-all">
-                                                        <span className="material-icons-round text-lg">edit</span>
-                                                    </button>
-                                                )}
-                                                {permission.canDelete && (
-                                                    <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
-                                                        <span className="material-icons-round text-lg">delete</span>
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {items
+                                    .filter(item => {
+                                        const matchesName = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+                                        const matchesCategory = searchCategoryId === '' || item.categoryId === searchCategoryId;
+                                        return matchesName && matchesCategory;
+                                    })
+                                    .map(item => (
+                                        <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                            <td className="px-6 py-4 font-medium">{item.name}</td>
+                                            <td className="px-6 py-4">
+                                                <span className="bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg text-xs">{item.categoryName}</span>
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-500">{item.unit}</td>
+                                            <td className="px-6 py-4 text-right font-semibold">R$ {item.unitPrice.toLocaleString('pt-BR')}</td>
+                                            <td className="px-6 py-4 text-center">
+                                                <div className="flex justify-center gap-2">
+                                                    {permission.canWrite && (
+                                                        <button onClick={() => onEditItem(item.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-all">
+                                                            <span className="material-icons-round text-lg">edit</span>
+                                                        </button>
+                                                    )}
+                                                    {permission.canDelete && (
+                                                        <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
+                                                            <span className="material-icons-round text-lg">delete</span>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
                             </tbody>
                         </table>
                     </div>

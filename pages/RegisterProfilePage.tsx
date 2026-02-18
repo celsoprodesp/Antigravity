@@ -48,7 +48,6 @@ const RegisterProfilePage: React.FC<RegisterProfilePageProps> = ({ profiles, edi
                 return;
             }
 
-            // Create default permissions (all false) for the new profile
             const defaultPermissions = SYSTEM_PAGES.map(page => ({
                 id: Math.random().toString(36).substr(2, 9),
                 page_name: page.name,
@@ -81,14 +80,12 @@ const RegisterProfilePage: React.FC<RegisterProfilePageProps> = ({ profiles, edi
             alert('Erro ao excluir perfil: ' + error.message);
             return;
         }
-        onSave({ id, name: '', description: '' }); // Trigger refresh
+        onSave({ id, name: '', description: '' });
     };
 
     const handleEditInList = (profile: Profile) => {
         setName(profile.name);
         setDescription(profile.description);
-        // Scrolled to top would be nice, but for now just setting state
-        // In a real app we'd use routing to change to editing state
     };
 
     return (
@@ -103,7 +100,6 @@ const RegisterProfilePage: React.FC<RegisterProfilePageProps> = ({ profiles, edi
                 </button>
             </div>
 
-            {/* Formulário */}
             <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
                 <div className="flex items-center gap-4 mb-2">
                     <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-200 dark:shadow-violet-900/30">
@@ -148,42 +144,47 @@ const RegisterProfilePage: React.FC<RegisterProfilePageProps> = ({ profiles, edi
                 </div>
             </div>
 
-            {/* Lista de Perfis */}
-            {profiles.length > 0 && (
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                    <div className="p-6 border-b border-slate-100 dark:border-slate-800">
-                        <h3 className="font-bold flex items-center gap-2">
-                            <span className="material-icons-outlined text-primary text-xl">list</span>
-                            <span>Perfis Cadastrados ({profiles.length})</span>
-                        </h3>
-                    </div>
-                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                        {profiles.map(profile => (
-                            <div key={profile.id} className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-                                    <span className="material-icons-round text-violet-600 dark:text-violet-400 text-xl">badge</span>
+            {profiles.length > 0 && (() => {
+                const [searchFilter, setSearchFilter] = useState('');
+                const [tempSearch, setTempSearch] = useState('');
+                const filteredProfiles = profiles.filter(p => p.name.toLowerCase().includes(searchFilter.toLowerCase()));
+
+                return (
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-800 space-y-4">
+                            <h3 className="font-bold flex items-center gap-2">
+                                <span className="material-icons-outlined text-primary text-xl">list</span>
+                                <span>Perfis Cadastrados ({profiles.length})</span>
+                            </h3>
+                            <div className="flex gap-3">
+                                <div className="flex-1 relative">
+                                    <span className="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+                                    <input type="text" placeholder="Filtrar perfil..." value={tempSearch} onChange={(e) => setTempSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
                                 </div>
-                                <div className="flex-1">
-                                    <p className="font-medium">{profile.name}</p>
-                                    <p className="text-xs text-slate-500">{profile.description}</p>
-                                </div>
-                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {permission.canWrite && (
-                                        <button onClick={() => handleEditInList(profile)} className="p-2 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/5 transition-all">
-                                            <span className="material-icons-round text-base">edit</span>
-                                        </button>
-                                    )}
-                                    {profile.id !== '1' && permission.canDelete && (
-                                        <button onClick={() => handleDelete(profile.id)} className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
-                                            <span className="material-icons-round text-base">delete</span>
-                                        </button>
-                                    )}
-                                </div>
+                                <button onClick={() => { setTempSearch(''); setSearchFilter(''); }} className="px-4 py-2 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Limpar</button>
+                                <button onClick={() => setSearchFilter(tempSearch)} className="px-6 py-2 bg-slate-900 dark:bg-slate-700 text-white rounded-xl text-sm font-medium hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors">Pesquisar</button>
                             </div>
-                        ))}
+                        </div>
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {filteredProfiles.length > 0 ? filteredProfiles.map(profile => (
+                                <div key={profile.id} className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                    <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+                                        <span className="material-icons-round text-violet-600 dark:text-violet-400 text-xl">badge</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-medium">{profile.name}</p>
+                                        <p className="text-xs text-slate-500">{profile.description}</p>
+                                    </div>
+                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {permission.canWrite && <button onClick={() => handleEditInList(profile)} className="p-2 rounded-lg text-slate-400 hover:text-primary transition-all"><span className="material-icons-round text-base">edit</span></button>}
+                                        {profile.id !== '1' && permission.canDelete && <button onClick={() => handleDelete(profile.id)} className="p-2 rounded-lg text-slate-400 hover:text-red-500 transition-all"><span className="material-icons-round text-base">delete</span></button>}
+                                    </div>
+                                </div>
+                            )) : <div className="p-12 text-center text-slate-500 italic text-sm">Nenhum perfil encontrado.</div>}
+                        </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
         </div>
     );
 };
